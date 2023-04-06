@@ -5,7 +5,7 @@
  */
 
 #include <zephyr/logging/log.h>
-LOG_MODULE_REGISTER(golioth_cold_chain, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(golioth_can_asset_tracker, LOG_LEVEL_DBG);
 
 #include <modem/lte_lc.h>
 #include <net/golioth/system_client.h>
@@ -125,7 +125,7 @@ void main(void)
 {
 	int err;
 
-	LOG_DBG("Start Reference Design Template sample");
+	LOG_INF("Started CAN Asset Tracker app");
 
 	LOG_INF("Firmware version: %s", CONFIG_MCUBOOT_IMAGE_VERSION);
 

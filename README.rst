@@ -1,19 +1,10 @@
-Golioth Cold Chain Tracker Reference
-####################################
+CAN Asset Tracker Reference Design
+##################################
 
 Overview
 ********
 
-The Golioth Cold Chain Tracker monitors temperature and records readings along
-with GPS location/time data. This is a common use-case for shipping
-temperature-sensitive goods, providing proof that the cold chain was maintained
-during transport.
-
-GPS readings can be received as frequently as once-per-second. Each packet of
-GPS data is combined with temperature/pressure/humidity data and uploaded to
-Golioth as a historical record using the GPS timestamp. The reference design
-caches data, so that when the device is out of cellular range, it can still
-record for later upload.
+TODO
 
 Local set up
 ************
@@ -27,18 +18,18 @@ Install the Python virtual environment (recommended)
 .. code-block:: console
 
    cd ~
-   mkdir golioth-reference-design-gps
-   python -m venv golioth-reference-design-gps/.venv
-   source golioth-reference-design-gps/.venv/bin/activate
-   pip install wheel west
+   mkdir golioth-reference-design-can-asset-tracker
+   python -m venv golioth-reference-design-can-asset-tracker/.venv
+   source golioth-reference-design-can-asset-tracker/.venv/bin/activate
+   pip install wheel west pre-commit
 
 Use ``west`` to initialize and install
 ======================================
 
 .. code-block:: console
 
-   cd ~/golioth-reference-design-gps
-   west init -m git@github.com:golioth/reference-design-gps.git .
+   cd ~/golioth-reference-design-can-asset-tracker
+   west init -m git@github.com:golioth/reference-design-can-asset-tracker.git .
    west update
    west zephyr-export
    pip install -r deps/zephyr/scripts/requirements.txt
@@ -80,7 +71,7 @@ Golioth Features
 This app implements:
 
 * Over-the-Air (OTA) firmware updates
-* LightDB Stream for recording periodic GPS and weather sensor readings to the
+* LightDB Stream for recording periodic GPS and can frame readings to the
   ``gps`` endpoint.
 * Settings Service to adjust the delay between recording GPS readings, and the
   delay between sending cached readings to Golioth
@@ -133,7 +124,7 @@ Nordic nRF9160 DK
 This reference design may be build for the `Nordic nRF9160 DK`_, with the
 `MikroE Arduino UNO click shield`_ to interface the two click boards.
 
-* Position the WEATHER click in Slot 1
+* Position the CAN click in Slot 1
 * Position the GNSS 7 click in Slot 2
 
 The click boards must be in this order for the GPS UART to work.
