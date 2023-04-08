@@ -33,6 +33,7 @@ Use ``west`` to initialize and install
    west update
    west zephyr-export
    pip install -r deps/zephyr/scripts/requirements.txt
+   source deps/zephyr/zephyr-env.sh
 
 This will also install the `golioth-zephyr-boards`_ definitions for the Golioth
 Aludel-Mini.
