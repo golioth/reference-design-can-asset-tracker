@@ -17,6 +17,7 @@ LOG_MODULE_REGISTER(golioth_can_asset_tracker, LOG_LEVEL_DBG);
 #include "app_work.h"
 #include "dfu/app_dfu.h"
 #include "libostentus/libostentus.h"
+#include "can_forwarder.h"
 
 #include <zephyr/drivers/gpio.h>
 
@@ -159,6 +160,12 @@ void main(void)
 
 	/* Initialize app RPC */
 	app_rpc_init(client);
+
+	/* Initialize CAN listener */
+	err = can_forwarder_init(client);
+	if (err != 0) {
+		LOG_ERR("Error initializing CAN listener [%d]", err);
+	}
 
 	/* Register Golioth on_connect callback */
 	client->on_connect = golioth_on_connect;

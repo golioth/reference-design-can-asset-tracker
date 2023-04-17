@@ -56,12 +56,15 @@ static void process_reading(char *raw_nmea) {
 			uint64_t wait_for = _last_gps;
 			if (k_uptime_delta(&wait_for) >= ((uint64_t)get_gps_delay_s() * 1000)) {
 				if (at_data.frame.valid == true) {
-						/* if queue is full, message is silently dropped */
-						k_msgq_put(&nmea_msgq, &at_data, K_NO_WAIT);
+					LOG_DBG("Adding GPS frame to nmea_msgq");
 
-						/* wait_for now contains the current timestamp. Store this
-						 * for the next reading. */
-						_last_gps = wait_for;
+					/* if queue is full, message is silently dropped */
+					k_msgq_put(&nmea_msgq, &at_data, K_NO_WAIT);
+
+					/* wait_for now contains the current timestamp. Store this
+					 * for the next reading.
+					 */
+					_last_gps = wait_for;
 				} else {
 					LOG_DBG("Skipping because satellite fix not established");
 				}
@@ -141,6 +144,7 @@ void app_work_sensor_read(void)
 		slide_set(O_LAT, lat_str, strlen(lat_str));
 		slide_set(O_LON, lon_str, strlen(lon_str));
 
+		LOG_DBG("Sending GPS data to Golioth LightDB Stream");
 		err = golioth_stream_push(client, "gps",
 				GOLIOTH_CONTENT_FORMAT_APP_JSON,
 				json_buf, strlen(json_buf));
