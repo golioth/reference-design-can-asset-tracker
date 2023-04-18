@@ -17,6 +17,7 @@ LOG_MODULE_REGISTER(app_work, LOG_LEVEL_DBG);
 #include "libostentus/libostentus.h"
 #include "lib/minmea/minmea.h"
 #include <stdio.h>
+#include "can_forwarder.h"
 
 #ifdef CONFIG_ALUDEL_BATTERY_MONITOR
 #include "battery_monitor/battery.h"
@@ -56,8 +57,6 @@ static void process_reading(char *raw_nmea) {
 			uint64_t wait_for = _last_gps;
 			if (k_uptime_delta(&wait_for) >= ((uint64_t)get_gps_delay_s() * 1000)) {
 				if (at_data.frame.valid == true) {
-					LOG_DBG("Adding GPS frame to nmea_msgq");
-
 					/* if queue is full, message is silently dropped */
 					k_msgq_put(&nmea_msgq, &at_data, K_NO_WAIT);
 
@@ -69,7 +68,7 @@ static void process_reading(char *raw_nmea) {
 					LOG_DBG("Skipping because satellite fix not established");
 				}
 			} else {
-				LOG_DBG("Ignoring reading due to gps_delay_s window");
+				/* LOG_DBG("Ignoring reading due to gps_delay_s window"); */
 			}
 		}
 	}
@@ -144,12 +143,13 @@ void app_work_sensor_read(void)
 		slide_set(O_LAT, lat_str, strlen(lat_str));
 		slide_set(O_LON, lon_str, strlen(lon_str));
 
-		LOG_DBG("Sending GPS data to Golioth LightDB Stream");
 		err = golioth_stream_push(client, "gps",
 				GOLIOTH_CONTENT_FORMAT_APP_JSON,
 				json_buf, strlen(json_buf));
 		if (err) LOG_ERR("Failed to send sensor data to Golioth: %d", err);
 	}
+
+	can_forwarder_send_frames();
 }
 
 void app_work_init(struct golioth_client* work_client) {
