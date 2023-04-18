@@ -1,6 +1,6 @@
 sample:
-  description: Golioth Reference Design Template
-  name: rd_template
+  description: Golioth Cold Chain Tracker Reference Design
+  name: cold_chain
 common:
   harness: net
   platform_allow: >

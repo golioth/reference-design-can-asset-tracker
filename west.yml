@@ -35,5 +35,10 @@ manifest:
       path: app/src/libostentus
       revision: 5d37e4160959881932d1dd869e1d238096878cf2
       url: git@github.com:golioth/libostentus.git
+
+    - name: minmea
+      path: app/src/lib/minmea
+      revision: 85439b97dd4984c5efb84ce954b85088e781dae8
+      url: https://github.com/kosma/minmea.git
   self:
     path: app

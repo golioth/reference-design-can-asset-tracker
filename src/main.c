@@ -5,7 +5,7 @@
  */
 
 #include <zephyr/logging/log.h>
-LOG_MODULE_REGISTER(golioth_rd_template, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(golioth_cold_chain, LOG_LEVEL_DBG);
 
 #include <modem/lte_lc.h>
 #include <net/golioth/system_client.h>
@@ -134,6 +134,7 @@ void main(void)
 
 	/* Show Golioth Logo on Ostentus ePaper screen */
 	show_splash();
+	k_sleep(K_SECONDS(4));
 
 	/* Get system thread id so loop delay change event can wake main */
 	_system_thread = k_current_get();
@@ -210,10 +211,11 @@ void main(void)
 	 *  - use the enum in app_work.h to add new keys
 	 *  - values are updated using these keys (see app_work.c)
 	 */
-	slide_add(UP_COUNTER, "Counter", strlen("Counter"));
-	slide_add(DN_COUNTER, "Anti-counter", strlen("Anti-counter"));
+	slide_add(O_LAT, O_LABEL_LAT, strlen(O_LABEL_LAT));
+	slide_add(O_LON, O_LABEL_LON, strlen(O_LABEL_LON));
+	slide_add(O_TEM, O_LABEL_TEM, strlen(O_LABEL_TEM));
 	/* Set the title ofthe Ostentus summary slide (optional) */
-	summary_title("Counters:", strlen("Counters:"));
+	summary_title(O_SUMMARY_TITLE, strlen(O_SUMMARY_TITLE));
 	/* Start Ostentus slideshow with 30 second delay between slides */
 	slideshow(30000);
 

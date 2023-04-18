@@ -14,11 +14,18 @@ LOG_MODULE_REGISTER(app_settings, LOG_LEVEL_DBG);
 
 static struct golioth_client *client;
 
-static int32_t _loop_delay_s = 60;
+/* How long to wait between uploading to Golioth */
+static int32_t _loop_delay_s = 5;
+/* How long to wait between GPS readings */
+static int32_t _gps_delay_s = 3;
 
 int32_t get_loop_delay_s(void)
 {
 	return _loop_delay_s;
+}
+
+int32_t get_gps_delay_s(void) {
+	return _gps_delay_s;
 }
 
 enum golioth_settings_status on_setting(
@@ -46,6 +53,28 @@ enum golioth_settings_status on_setting(
 		} else {
 			_loop_delay_s = (int32_t)value->i64;
 			LOG_INF("Set loop delay to %d seconds", _loop_delay_s);
+
+			wake_system_thread();
+		}
+		return GOLIOTH_SETTINGS_SUCCESS;
+	} else if (strcmp(key, "GPS_DELAY_S") == 0) {
+		/* This setting is expected to be numeric, return an error if it's not */
+		if (value->type != GOLIOTH_SETTINGS_VALUE_TYPE_INT64) {
+			return GOLIOTH_SETTINGS_VALUE_FORMAT_NOT_VALID;
+		}
+
+		/* Limit to 12 hour max delay: [0, 43200] */
+		if (value->i64 < 0 || value->i64 > 43200) {
+			return GOLIOTH_SETTINGS_VALUE_OUTSIDE_RANGE;
+		}
+
+		/* Only update if value has changed */
+		if (_gps_delay_s == (int32_t)value->i64) {
+			LOG_DBG("Received GPS_DELAY_S already matches local value.");
+		}
+		else {
+			_gps_delay_s = (int32_t)value->i64;
+			LOG_INF("Set GPS delay to %d seconds", _gps_delay_s);
 
 			wake_system_thread();
 		}

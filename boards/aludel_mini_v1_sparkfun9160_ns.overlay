@@ -1,0 +1,27 @@
+/ {
+	aliases {
+		gnss7-sel = &gnss7_sel;
+	};
+
+	gpio_logic {
+		compatible = "gpio-leds";
+		gnss7_sel: gnss7_sel {
+			gpios = <&gpio0 14 GPIO_ACTIVE_HIGH>;
+			label = "Interface Select for GNSS7 Click";
+		};
+	};
+};
+
+&uart2 {
+	status = "okay";
+	current-speed = <38400>;
+};
+
+&i2c1 {
+	zephyr,concat-buf-size = <48>;
+
+	bme280@76 {
+		compatible = "bosch,bme280";
+		reg = <0x76>;
+	};
+};
