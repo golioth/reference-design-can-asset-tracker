@@ -16,13 +16,11 @@ void app_work_sensor_read(void);
  */
 typedef enum {
     O_LAT,
-    O_LON,
-    O_TEM
+    O_LON
 } slide_key;
 
 #define O_LABEL_LAT "Latitude"
 #define O_LABEL_LON "Longitude"
-#define O_LABEL_TEM "Temperature"
-#define O_SUMMARY_TITLE "Cold Chain"
+#define O_SUMMARY_TITLE "CAN Asset Tracker"
 
 #endif /* __APP_WORK_H__ */

@@ -10,7 +10,6 @@ LOG_MODULE_REGISTER(app_work, LOG_LEVEL_DBG);
 #include <net/golioth/system_client.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/gpio.h>
-#include <zephyr/drivers/sensor.h>
 #include <zephyr/drivers/uart.h>
 
 #include "app_work.h"
@@ -31,93 +30,38 @@ static const struct gpio_dt_spec gnss7_sel = GPIO_DT_SPEC_GET(UART_SEL, gpios);
 
 #define NMEA_SIZE 128
 
-struct cold_chain_data {
-	struct sensor_value tem;
-	struct sensor_value pre;
-	struct sensor_value hum;
+struct asset_tracker_data {
 	struct minmea_sentence_rmc frame;
-};
-
-struct weather_data {
-	struct sensor_value tem;
-	struct sensor_value pre;
-	struct sensor_value hum;
 };
 
 /* Global timestamp records when the previous GPS value was stored */
 uint64_t _last_gps = 0;
 
-/* Global to hold BME280 readings; updated at 1 Hz by thread */
-struct weather_data _latest_weather_data;
-
-K_MSGQ_DEFINE(nmea_msgq, sizeof(struct cold_chain_data), 64, 4);
+K_MSGQ_DEFINE(nmea_msgq, sizeof(struct asset_tracker_data), 64, 4);
 
 static char rx_buf[NMEA_SIZE];
 static int rx_buf_pos;
 
 static struct golioth_client *client;
 /* Add Sensor structs here */
-const struct device *weather_dev;
-
-/* Thread reads weather sensor and provides easy access to latest data */
-K_MUTEX_DEFINE(weather_mutex); /* Protect data */
-K_SEM_DEFINE(bme280_initialized_sem, 0, 1); /* Wait until sensor is ready */
-
-void weather_sensor_data_fetch(void) {
-	if (!weather_dev) {
-		return;
-	}
-	sensor_sample_fetch(weather_dev);
-	if (k_mutex_lock(&weather_mutex, K_MSEC(100)) == 0) {
-		sensor_channel_get(weather_dev, SENSOR_CHAN_AMBIENT_TEMP, &_latest_weather_data.tem);
-		sensor_channel_get(weather_dev, SENSOR_CHAN_PRESS, &_latest_weather_data.pre);
-		sensor_channel_get(weather_dev, SENSOR_CHAN_HUMIDITY, &_latest_weather_data.hum);
-		k_mutex_unlock(&weather_mutex);
-	} else {
-		LOG_DBG("Unable to lock mutex to read weather sensor");
-	}
-}
-
-#define WEATHER_STACK 1024
-
-extern void weather_sensor_thread(void *d0, void *d1, void *d2) {
-	/* Block until sensor is available */
-	k_sem_take(&bme280_initialized_sem, K_FOREVER);
-	while(1) {
-		weather_sensor_data_fetch();
-		k_sleep(K_SECONDS(1));
-	}
-}
-
-K_THREAD_DEFINE(weather_sensor_tid, WEATHER_STACK,
-            weather_sensor_thread, NULL, NULL, NULL,
-            K_LOWEST_APPLICATION_THREAD_PRIO, 0, 0);
 
 /* This is called from the UART irq callback to try to get out fast */
 static void process_reading(char *raw_nmea) {
 	enum minmea_sentence_id sid;
 	sid = minmea_sentence_id(raw_nmea, false);
 	if (sid == MINMEA_SENTENCE_RMC) {
-		struct cold_chain_data cc_data;
-		bool success = minmea_parse_rmc(&cc_data.frame, raw_nmea);
+		struct asset_tracker_data at_data;
+		bool success = minmea_parse_rmc(&at_data.frame, raw_nmea);
 		if (success) {
 			uint64_t wait_for = _last_gps;
 			if (k_uptime_delta(&wait_for) >= ((uint64_t)get_gps_delay_s() * 1000)) {
-				if (cc_data.frame.valid == true) {
-					if (k_mutex_lock(&weather_mutex, K_MSEC(1)) == 0) {
-						cc_data.tem = _latest_weather_data.tem;
-						cc_data.pre = _latest_weather_data.pre;
-						cc_data.hum = _latest_weather_data.hum;
-						k_mutex_unlock(&weather_mutex);
+				if (at_data.frame.valid == true) {
 						/* if queue is full, message is silently dropped */
-						k_msgq_put(&nmea_msgq, &cc_data, K_NO_WAIT);
+						k_msgq_put(&nmea_msgq, &at_data, K_NO_WAIT);
 
 						/* wait_for now contains the current timestamp. Store this
 						 * for the next reading. */
 						_last_gps = wait_for;
-					} else {
-						LOG_ERR("Couldn't read weather info, skipping this reading");
-					}
 				} else {
 					LOG_DBG("Skipping because satellite fix not established");
 				}
@@ -159,45 +103,16 @@ void serial_cb(const struct device *dev, void *user_data) {
 	}
 }
 
-/*
- * Get a device structure from a devicetree node with compatible
- * "bosch,bme280". (If there are multiple, just pick one.)
- */
-static const struct device *get_bme280_device(void)
-{
-	const struct device *const bme_dev = DEVICE_DT_GET_ANY(bosch_bme280);
-
-	if (bme_dev == NULL) {
-		/* No such node, or the node does not have status "okay". */
-		LOG_ERR("\nError: no device found.");
-		return NULL;
-	}
-
-	if (!device_is_ready(bme_dev)) {
-		LOG_ERR("Error: Device \"%s\" is not ready; "
-		       "check the driver initialization logs for errors.",
-		       bme_dev->name);
-		return NULL;
-	}
-
-	LOG_DBG("Found device \"%s\", getting sensor data", bme_dev->name);
-
-	/* Give semaphore to signal sensor is ready for reading */
-	k_sem_give(&bme280_initialized_sem);
-	return bme_dev;
-}
-
 /* This will be called by the main() loop */
 /* Do all of your work here! */
 void app_work_sensor_read(void)
 {
 	int err;
-	struct cold_chain_data cached_data;
+	struct asset_tracker_data cached_data;
 	char json_buf[128];
 	char ts_str[32];
 	char lat_str[12];
 	char lon_str[12];
-	char tem_str[12];
 
 	/* Log battery levels if possible */
 	IF_ENABLED(CONFIG_ALUDEL_BATTERY_MONITOR, (log_battery_info();));
@@ -215,21 +130,16 @@ void app_work_sensor_read(void)
 				cached_data.frame.time.seconds,
 				cached_data.frame.time.microseconds
 				);
-		snprintk(tem_str, sizeof(tem_str), "%d.%02dc", cached_data.tem.val1, cached_data.tem.val2 / 10000);
 
 		snprintk(json_buf, sizeof(json_buf),
-				"{\"lat\":%s,\"lon\":%s,\"time\":\"%s\",\"tem\":%d.%06d,\"pre\":%d.%06d,\"hum\":%d.%06d}",
+				"{\"lat\":%s,\"lon\":%s,\"time\":\"%s\"}",
 				lat_str,
 				lon_str,
-				ts_str,
-				cached_data.tem.val1, cached_data.tem.val2,
-				cached_data.pre.val1, cached_data.pre.val2,
-				cached_data.hum.val1, cached_data.hum.val2
+				ts_str
 				);
 		LOG_DBG("%s", json_buf);
 		slide_set(O_LAT, lat_str, strlen(lat_str));
 		slide_set(O_LON, lon_str, strlen(lon_str));
-		slide_set(O_TEM, tem_str, strlen(tem_str));
 
 		err = golioth_stream_push(client, "gps",
 				GOLIOTH_CONTENT_FORMAT_APP_JSON,
@@ -251,7 +161,4 @@ void app_work_init(struct golioth_client* work_client) {
 	/* configure interrupt and callback to receive data */
 	uart_irq_callback_user_data_set(uart_dev, serial_cb, NULL);
 	uart_irq_rx_enable(uart_dev);
-
-	weather_dev = get_bme280_device();
-	weather_sensor_data_fetch();
 }
