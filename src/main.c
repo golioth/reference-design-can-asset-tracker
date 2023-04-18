@@ -5,7 +5,7 @@
  */
 
 #include <zephyr/logging/log.h>
-LOG_MODULE_REGISTER(golioth_cold_chain, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(golioth_can_asset_tracker, LOG_LEVEL_DBG);
 
 #include <modem/lte_lc.h>
 #include <net/golioth/system_client.h>
@@ -125,7 +125,7 @@ void main(void)
 {
 	int err;
 
-	LOG_DBG("Start Reference Design Template sample");
+	LOG_INF("Started CAN Asset Tracker app");
 
 	LOG_INF("Firmware version: %s", CONFIG_MCUBOOT_IMAGE_VERSION);
 
@@ -213,7 +213,7 @@ void main(void)
 	 */
 	slide_add(O_LAT, O_LABEL_LAT, strlen(O_LABEL_LAT));
 	slide_add(O_LON, O_LABEL_LON, strlen(O_LABEL_LON));
-	slide_add(O_TEM, O_LABEL_TEM, strlen(O_LABEL_TEM));
+	slide_add(O_VEHICLE_SPEED, O_LABEL_VEHICLE_SPEED, strlen(O_LABEL_VEHICLE_SPEED));
 	/* Set the title ofthe Ostentus summary slide (optional) */
 	summary_title(O_SUMMARY_TITLE, strlen(O_SUMMARY_TITLE));
 	/* Start Ostentus slideshow with 30 second delay between slides */

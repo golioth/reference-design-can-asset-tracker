@@ -18,14 +18,22 @@ static struct golioth_client *client;
 static int32_t _loop_delay_s = 5;
 /* How long to wait between GPS readings */
 static int32_t _gps_delay_s = 3;
+/* How long to wait between vehicle speed readings */
+static int32_t _vehicle_speed_delay_s = 1;
 
 int32_t get_loop_delay_s(void)
 {
 	return _loop_delay_s;
 }
 
-int32_t get_gps_delay_s(void) {
+int32_t get_gps_delay_s(void)
+{
 	return _gps_delay_s;
+}
+
+int32_t get_vehicle_speed_delay_s(void)
+{
+	return _vehicle_speed_delay_s;
 }
 
 enum golioth_settings_status on_setting(
@@ -75,8 +83,26 @@ enum golioth_settings_status on_setting(
 		else {
 			_gps_delay_s = (int32_t)value->i64;
 			LOG_INF("Set GPS delay to %d seconds", _gps_delay_s);
+		}
+		return GOLIOTH_SETTINGS_SUCCESS;
+	} else if (strcmp(key, "VEHICLE_SPEED_DELAY_S") == 0) {
+		/* This setting is expected to be numeric, return an error if it's not */
+		if (value->type != GOLIOTH_SETTINGS_VALUE_TYPE_INT64) {
+			return GOLIOTH_SETTINGS_VALUE_FORMAT_NOT_VALID;
+		}
 
-			wake_system_thread();
+		/* Limit to 12 hour max delay: [0, 43200] */
+		if (value->i64 < 0 || value->i64 > 43200) {
+			return GOLIOTH_SETTINGS_VALUE_OUTSIDE_RANGE;
+		}
+
+		/* Only update if value has changed */
+		if (_vehicle_speed_delay_s == (int32_t)value->i64) {
+			LOG_DBG("Received VEHICLE_SPEED_DELAY_S already matches local value.");
+		} else {
+			_vehicle_speed_delay_s = (int32_t)value->i64;
+			LOG_INF("Set vehicle speed readings delay to %d seconds",
+			_vehicle_speed_delay_s);
 		}
 		return GOLIOTH_SETTINGS_SUCCESS;
 	}

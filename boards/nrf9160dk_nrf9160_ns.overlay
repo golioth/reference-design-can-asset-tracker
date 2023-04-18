@@ -1,4 +1,8 @@
 / {
+	chosen {
+		zephyr,canbus = &mcp2515;
+	};
+
 	aliases {
 		click-uart = &uart1;
 		click-i2c = &i2c2;
@@ -20,13 +24,21 @@
 	current-speed = <38400>;
 };
 
+&arduino_spi {
+	mcp2515: mcp2515@0 {
+		compatible = "microchip,mcp2515";
+		spi-max-frequency = <1000000>;
+		int-gpios = <&arduino_header 8 GPIO_ACTIVE_LOW>; /* D2 */
+		status = "okay";
+		reg = <0x0>;
+		osc-freq = <10000000>;
+		bus-speed = <500000>;
+		sjw = <1>;
+		sample-point = <875>;
 
-&i2c2 {
-	zephyr,concat-buf-size = <48>;
-
-	bme280@76 {
-		compatible = "bosch,bme280";
-		reg = <0x76>;
+		can-transceiver {
+			max-bitrate = <1000000>;
+		};
 	};
 };
 
