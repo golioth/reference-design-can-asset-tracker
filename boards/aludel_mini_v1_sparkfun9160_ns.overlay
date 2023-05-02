@@ -1,4 +1,8 @@
 / {
+	chosen {
+		zephyr,canbus = &mcp2515;
+	};
+
 	aliases {
 		gnss7-sel = &gnss7_sel;
 	};
@@ -6,13 +10,62 @@
 	gpio_logic {
 		compatible = "gpio-leds";
 		gnss7_sel: gnss7_sel {
-			gpios = <&gpio0 14 GPIO_ACTIVE_HIGH>;
+			gpios = <&feather_header 2 GPIO_ACTIVE_HIGH>;
 			label = "Interface Select for GNSS7 Click";
 		};
 	};
 };
 
+&i2c1 {
+	zephyr,concat-buf-size = <48>;
+};
+
 &uart2 {
 	status = "okay";
 	current-speed = <38400>;
+};
+
+&spi2 {
+	status = "disabled";
+};
+
+/delete-node/ &w25q32jv;
+
+&spi3 {
+	cs-gpios = <&feather_header 15 GPIO_ACTIVE_LOW>;
+
+	mcp2515: mcp2515@0 {
+		compatible = "microchip,mcp2515";
+		spi-max-frequency = <1000000>;
+		int-gpios = <&feather_header 17 GPIO_ACTIVE_LOW>;
+		status = "okay";
+		reg = <0x0>;
+		osc-freq = <10000000>;
+		bus-speed = <125000>;
+		sjw = <1>;
+		sample-point = <875>;
+
+		can-transceiver {
+			max-bitrate = <1000000>;
+		};
+	};
+};
+
+&pinctrl {
+	spi3_default: spi3_default {
+		group1 {
+			psels = <NRF_PSEL(SPIM_SCK, 0, 19)>,
+				<NRF_PSEL(SPIM_MOSI, 0, 21)>,
+				<NRF_PSEL(SPIM_MISO, 0, 22)>;
+		};
+	};
+
+	spi3_sleep: spi3_sleep {
+		group1 {
+			psels = <NRF_PSEL(SPIM_SCK, 0, 19)>,
+				<NRF_PSEL(SPIM_MOSI, 0, 21)>,
+				<NRF_PSEL(SPIM_MISO, 0, 22)>;
+			low-power-enable;
+		};
+	};
 };
