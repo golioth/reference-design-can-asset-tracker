@@ -146,6 +146,9 @@ void process_rmc_frames_thread(void *arg1, void *arg2, void *arg3)
 	int err;
 	struct minmea_sentence_rmc rmc_frame;
 	struct can_asset_tracker_data cat_frame;
+	char lat_str[12];
+	char lon_str[12];
+	char mph_str[12];
 
 	while (k_msgq_get(&rmc_msgq, &rmc_frame, K_FOREVER) == 0) {
 		cat_frame.rmc_frame = rmc_frame;
@@ -166,6 +169,17 @@ void process_rmc_frames_thread(void *arg1, void *arg2, void *arg3)
 		if (err) {
 			LOG_ERR("Unable to add cat_frame to cat_msgq: %d", err);
 		}
+
+		/* Update Ostentus slide values */
+		snprintf(lat_str, sizeof(lat_str), "%f",
+			minmea_tocoord(&rmc_frame.latitude));
+		snprintf(lon_str, sizeof(lon_str), "%f",
+			minmea_tocoord(&rmc_frame.longitude));
+		snprintf(mph_str, sizeof(mph_str), "%f", cat_frame.mph);
+
+		slide_set(O_LAT, lat_str, strlen(lat_str));
+		slide_set(O_LON, lon_str, strlen(lon_str));
+		slide_set(O_MPH, mph_str, strlen(mph_str));
 	}
 }
 
@@ -277,9 +291,6 @@ void app_work_sensor_read(void)
 			cached_data.mph_min,
 			cached_data.mph_avg);
 		LOG_DBG("%s", json_buf);
-
-		slide_set(O_LAT, lat_str, strlen(lat_str));
-		slide_set(O_LON, lon_str, strlen(lon_str));
 
 		err = golioth_stream_push(client, "vehicle",
 			GOLIOTH_CONTENT_FORMAT_APP_JSON,

@@ -213,6 +213,7 @@ void main(void)
 	 */
 	slide_add(O_LAT, O_LABEL_LAT, strlen(O_LABEL_LAT));
 	slide_add(O_LON, O_LABEL_LON, strlen(O_LABEL_LON));
+	slide_add(O_MPH, O_LABEL_MPH, strlen(O_LABEL_MPH));
 	/* Set the title ofthe Ostentus summary slide (optional) */
 	summary_title(O_SUMMARY_TITLE, strlen(O_SUMMARY_TITLE));
 	/* Start Ostentus slideshow with 30 second delay between slides */

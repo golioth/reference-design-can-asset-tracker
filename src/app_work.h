@@ -15,12 +15,14 @@ void app_work_sensor_read(void);
  * inserting elements with the name of your choice to this enum.
  */
 typedef enum {
-    O_LAT,
-    O_LON
+	O_LAT,
+	O_LON,
+	O_MPH
 } slide_key;
 
 #define O_LABEL_LAT "Latitude"
 #define O_LABEL_LON "Longitude"
+#define O_LABEL_MPH "MPH"
 #define O_SUMMARY_TITLE "CAN Asset Tracker"
 
 #endif /* __APP_WORK_H__ */
