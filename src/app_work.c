@@ -281,11 +281,10 @@ void app_work_sensor_read(void)
 		 * `time` timestamp of the data.
 		 */
 		snprintk(json_buf, sizeof(json_buf),
-			"{\"time\":\"%s\",\"gps\":{\"lat\":%s,\"lon\":%s,\"ts\":\"%s\"},\"speed\":{\"mph\":%.2f,\"mph_max\":%.2f,\"mph_min\":%.2f,\"mph_avg\":%.2f}}",
+			"{\"time\":\"%s\",\"gps\":{\"lat\":%s,\"lon\":%s},\"speed\":{\"mph\":%.2f,\"mph_max\":%.2f,\"mph_min\":%.2f,\"mph_avg\":%.2f}}",
 			ts_str,
 			lat_str,
 			lon_str,
-			ts_str,
 			cached_data.mph,
 			cached_data.mph_max,
 			cached_data.mph_min,
