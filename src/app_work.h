@@ -23,6 +23,6 @@ typedef enum {
 #define O_LABEL_LAT "Latitude"
 #define O_LABEL_LON "Longitude"
 #define O_LABEL_MPH "MPH"
-#define O_SUMMARY_TITLE "CAN Asset Tracker"
+#define O_SUMMARY_TITLE "Asset Tracker"
 
 #endif /* __APP_WORK_H__ */

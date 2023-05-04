@@ -175,7 +175,7 @@ void process_rmc_frames_thread(void *arg1, void *arg2, void *arg3)
 			minmea_tocoord(&rmc_frame.latitude));
 		snprintf(lon_str, sizeof(lon_str), "%f",
 			minmea_tocoord(&rmc_frame.longitude));
-		snprintf(mph_str, sizeof(mph_str), "%f", cat_frame.mph);
+		snprintf(mph_str, sizeof(mph_str), "%d", (int)cat_frame.mph);
 
 		slide_set(O_LAT, lat_str, strlen(lat_str));
 		slide_set(O_LON, lon_str, strlen(lon_str));
