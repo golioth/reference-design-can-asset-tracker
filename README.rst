@@ -127,7 +127,7 @@ Hardware Variations
 Nordic nRF9160 DK
 =================
 
-This reference design may be build for the `Nordic nRF9160 DK`_, with the
+This reference design may be built for the `Nordic nRF9160 DK`_, with the
 `MikroE Arduino UNO click shield`_ to interface the two click boards.
 
 * Position the CAN click in Slot 1
@@ -145,5 +145,5 @@ from above to provision this board after programming the firmware.)
 
 .. _Golioth Console: https://console.golioth.io
 .. _golioth-zephyr-boards: https://github.com/golioth/golioth-zephyr-boards
-.. _nRF9160 DK: https://www.nordicsemi.com/Products/Development-hardware/nrf9160-dk
+.. _Nordic nRF9160 DK: https://www.nordicsemi.com/Products/Development-hardware/nrf9160-dk
 .. _MikroE Arduino UNO click shield: https://www.mikroe.com/arduino-uno-click-shield
