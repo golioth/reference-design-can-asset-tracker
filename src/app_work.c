@@ -30,15 +30,16 @@ LOG_MODULE_REGISTER(app_work, LOG_LEVEL_DBG);
 #define VEHICLE_SPEED_ID 0x244
 #define VEHICLE_SPEED_DLC 5
 
+static struct golioth_client *client;
+
 #define UART_DEVICE_NODE DT_ALIAS(click_uart)
 static const struct device *const uart_dev = DEVICE_DT_GET(UART_DEVICE_NODE);
 
 #define UART_SEL DT_ALIAS(gnss7_sel)
 static const struct gpio_dt_spec gnss7_sel = GPIO_DT_SPEC_GET(UART_SEL, gpios);
 
-const struct device *const can_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_canbus));
+static const struct device *const can_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_canbus));
 
-static struct golioth_client *client;
 struct can_asset_tracker_data {
 	struct minmea_sentence_rmc rmc_frame;
 	float mph;
@@ -51,19 +52,20 @@ K_MSGQ_DEFINE(cat_msgq, sizeof(struct can_asset_tracker_data), 64, 4);
 K_MSGQ_DEFINE(rmc_msgq, sizeof(struct minmea_sentence_rmc), 2, 4);
 CAN_MSGQ_DEFINE(can_msgq, 2);
 
-K_MUTEX_DEFINE(shared_data_mutex);
-
 #define PROCESS_CAN_FRAMES_THREAD_STACK_SIZE 2048
 #define PROCESS_CAN_FRAMES_THREAD_PRIORITY 2
+static k_tid_t process_can_frames_tid;
 struct k_thread process_can_frames_thread_data;
 K_THREAD_STACK_DEFINE(process_can_frames_thread_stack, PROCESS_CAN_FRAMES_THREAD_STACK_SIZE);
 
 #define PROCESS_RMC_FRAMES_THREAD_STACK_SIZE 2048
 #define PROCESS_RMC_FRAMES_THREAD_PRIORITY 2
+static k_tid_t process_rmc_frames_tid;
 struct k_thread process_rmc_frames_thread_data;
 K_THREAD_STACK_DEFINE(process_rmc_frames_thread_stack, PROCESS_RMC_FRAMES_THREAD_STACK_SIZE);
 
 /* Global variables shared between threads */
+K_MUTEX_DEFINE(shared_data_mutex);
 static int g_can_frame_counter;
 static float g_mph;
 static float g_mph_max;
@@ -76,14 +78,17 @@ void process_can_frames_thread(void *arg1, void *arg2, void *arg3)
 	ARG_UNUSED(arg2);
 	ARG_UNUSED(arg3);
 	int can_filter_id;
-	float mph;
-	uint16_t kmh;
 	struct can_frame can_frame;
 	const struct can_filter can_filter = {
 		.flags = CAN_FILTER_DATA | CAN_FILTER_IDE,
 		.id = VEHICLE_SPEED_ID,
 		.mask = CAN_EXT_ID_MASK
 	};
+	uint16_t kmh;
+	float mph;
+	char mph_str[12];
+	uint64_t last_mph_update = 0;
+	uint64_t elapsed_time = 0;
 
 	/* Automatically put frames matching can_filter into can_msgq */
 	can_filter_id = can_add_rx_filter_msgq(can_dev, &can_msgq, &can_filter);
@@ -135,6 +140,13 @@ void process_can_frames_thread(void *arg1, void *arg2, void *arg3)
 			g_mph_avg += (mph - g_mph_avg) / ++g_can_frame_counter;
 		}
 		k_mutex_unlock(&shared_data_mutex);
+
+		elapsed_time = last_mph_update;
+		if (k_uptime_delta(&elapsed_time) >= ((uint64_t)get_mph_update_delay_s() * 1000)) {
+			snprintf(mph_str, sizeof(mph_str), "%d", (int)mph);
+			slide_set(O_MPH, mph_str, strlen(mph_str));
+			last_mph_update = elapsed_time;
+		}
 	}
 }
 
@@ -148,7 +160,6 @@ void process_rmc_frames_thread(void *arg1, void *arg2, void *arg3)
 	struct can_asset_tracker_data cat_frame;
 	char lat_str[12];
 	char lon_str[12];
-	char mph_str[12];
 
 	while (k_msgq_get(&rmc_msgq, &rmc_frame, K_FOREVER) == 0) {
 		cat_frame.rmc_frame = rmc_frame;
@@ -175,11 +186,9 @@ void process_rmc_frames_thread(void *arg1, void *arg2, void *arg3)
 			minmea_tocoord(&rmc_frame.latitude));
 		snprintf(lon_str, sizeof(lon_str), "%f",
 			minmea_tocoord(&rmc_frame.longitude));
-		snprintf(mph_str, sizeof(mph_str), "%d", (int)cat_frame.mph);
 
 		slide_set(O_LAT, lat_str, strlen(lat_str));
 		slide_set(O_LON, lon_str, strlen(lon_str));
-		slide_set(O_MPH, mph_str, strlen(mph_str));
 	}
 }
 
@@ -300,8 +309,6 @@ void app_work_sensor_read(void)
 
 void app_work_init(struct golioth_client* work_client) {
 	int err;
-	k_tid_t process_can_frames_tid;
-	k_tid_t process_rmc_frames_tid;
 
 	client = work_client;
 

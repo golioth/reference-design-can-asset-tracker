@@ -95,6 +95,11 @@ integer value (seconds).
 
    Default value is ``3`` seconds.
 
+``MPH_UPDATE_DELAY_S`` Adjusts the delay between MPH display updates. Set to an
+integer value (seconds).
+
+   Default value is ``1`` second.
+
 Remote Procedure Call (RPC) Service
 ===================================
 
