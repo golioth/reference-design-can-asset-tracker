@@ -9,6 +9,7 @@ in a vehicle and continuously records vehicle sensor values using the ISO 15765
 (CAN bus) protocol.
 
 Specifically, the following OBD-II vehicle sensor "PIDs" are supported:
+
 * ``0x0D``: Vehicle Speed Sensor (VSS)
 
 The vehicle sensor values are combined with GPS location/time data and uploaded
