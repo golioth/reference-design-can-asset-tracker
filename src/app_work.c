@@ -15,6 +15,7 @@ LOG_MODULE_REGISTER(app_work, LOG_LEVEL_DBG);
 #include <zephyr/drivers/uart.h>
 #include <zephyr/drivers/can.h>
 #include <zephyr/sys/byteorder.h>
+#include <zephyr/drivers/sensor.h>
 
 #include "app_work.h"
 #include "app_settings.h"
@@ -166,8 +167,10 @@ void process_rmc_frames_thread(void *arg1, void *arg2, void *arg3)
 	ARG_UNUSED(arg2);
 	ARG_UNUSED(arg3);
 	int err;
+#ifdef CONFIG_ALUDEL_BATTERY_MONITOR
 	struct sensor_value batt_v;
 	struct sensor_value batt_lvl;
+#endif
 	struct minmea_sentence_rmc rmc_frame;
 	struct can_asset_tracker_data cat_frame;
 	char lat_str[12];
