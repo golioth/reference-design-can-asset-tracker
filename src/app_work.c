@@ -50,7 +50,7 @@ struct can_asset_tracker_data {
 	struct sensor_value batt_v;
 	struct sensor_value batt_lvl;
 	struct minmea_sentence_rmc rmc_frame;
-	uint8_t vehicle_speed;
+	int vehicle_speed;
 };
 
 K_MSGQ_DEFINE(cat_msgq, sizeof(struct can_asset_tracker_data), 64, 4);
@@ -71,7 +71,7 @@ K_THREAD_STACK_DEFINE(process_rmc_frames_thread_stack, PROCESS_RMC_FRAMES_THREAD
 
 /* Global variables shared between threads */
 K_MUTEX_DEFINE(shared_data_mutex);
-static uint8_t g_vehicle_speed;
+static int g_vehicle_speed;
 
 void process_can_frames_thread(void *arg1, void *arg2, void *arg3)
 {
@@ -101,7 +101,7 @@ void process_can_frames_thread(void *arg1, void *arg2, void *arg3)
 			0xCC
 		}
 	};
-	uint8_t vehicle_speed;
+	int vehicle_speed;
 	uint8_t data_len;
 	char vehicle_speed_str[9];
 
@@ -121,10 +121,13 @@ void process_can_frames_thread(void *arg1, void *arg2, void *arg3)
 
 	/* Initialize shared global variables */
 	k_mutex_lock(&shared_data_mutex, K_FOREVER);
-	g_vehicle_speed = 0;
+	/* -1 indicates a valid OBD2 response has not been received from the ECU */
+	g_vehicle_speed = -1;
 	k_mutex_unlock(&shared_data_mutex);
 
 	while (1) {
+		vehicle_speed = -1;
+
 		/* This sending call is blocking until the message is sent. */
 		err = can_send(can_dev, &vehicle_speed_request, K_MSEC(100), NULL, NULL);
 		if (err) {
@@ -142,20 +145,20 @@ void process_can_frames_thread(void *arg1, void *arg2, void *arg3)
 				if ((can_frame.data[1] == (OBD2_SERVICE_SHOW_CURRENT_DATA + 0x40))
 					&& (can_frame.data[2] == ODB2_PID_VEHICLE_SPEED)) {
 					vehicle_speed = can_frame.data[3];
-
-					/* Update shared global variables */
-					k_mutex_lock(&shared_data_mutex, K_FOREVER);
-					g_vehicle_speed = vehicle_speed;
-					k_mutex_unlock(&shared_data_mutex);
-
-					/* Update Ostentus slide values */
-					snprintf(vehicle_speed_str, sizeof(vehicle_speed_str),
-						"%d km/h", vehicle_speed);
-					slide_set(O_VEHICLE_SPEED, vehicle_speed_str,
-						strlen(vehicle_speed_str));
 				}
 			}
 		}
+
+		/* Update shared global variables */
+		k_mutex_lock(&shared_data_mutex, K_FOREVER);
+		g_vehicle_speed = vehicle_speed;
+		k_mutex_unlock(&shared_data_mutex);
+
+		/* Update Ostentus slide values */
+		snprintf(vehicle_speed_str, sizeof(vehicle_speed_str),
+			"%d km/h", vehicle_speed);
+		slide_set(O_VEHICLE_SPEED, vehicle_speed_str,
+			strlen(vehicle_speed_str));
 
 		k_sleep(K_SECONDS(get_vehicle_speed_delay_s()));
 	}
@@ -192,10 +195,9 @@ void process_rmc_frames_thread(void *arg1, void *arg2, void *arg3)
 			cat_frame.batt_lvl.val2 = batt_lvl.val2;
 		));
 
-		/* Use the latest vehicle speed reading */
+		/* Use the latest vehicle speed reading received from the ECU */
 		k_mutex_lock(&shared_data_mutex, K_FOREVER);
 		cat_frame.vehicle_speed = g_vehicle_speed;
-		g_vehicle_speed = 0;
 		k_mutex_unlock(&shared_data_mutex);
 
 		err = k_msgq_put(&cat_msgq, &cat_frame, K_NO_WAIT);
