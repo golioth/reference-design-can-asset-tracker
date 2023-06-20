@@ -178,6 +178,8 @@ void process_rmc_frames_thread(void *arg1, void *arg2, void *arg3)
 	struct can_asset_tracker_data cat_frame;
 	char lat_str[12];
 	char lon_str[12];
+	char batt_v_str[7];
+	char batt_lvl_str[5];
 
 	while (k_msgq_get(&rmc_msgq, &rmc_frame, K_FOREVER) == 0) {
 		cat_frame.rmc_frame = rmc_frame;
@@ -206,13 +208,16 @@ void process_rmc_frames_thread(void *arg1, void *arg2, void *arg3)
 		}
 
 		/* Update Ostentus slide values */
-		snprintf(lat_str, sizeof(lat_str), "%f",
-			minmea_tocoord(&rmc_frame.latitude));
-		snprintf(lon_str, sizeof(lon_str), "%f",
-			minmea_tocoord(&rmc_frame.longitude));
-
+		snprintf(lat_str, sizeof(lat_str), "%f", minmea_tocoord(&rmc_frame.latitude));
+		snprintf(lon_str, sizeof(lon_str), "%f", minmea_tocoord(&rmc_frame.longitude));
 		slide_set(O_LAT, lat_str, strlen(lat_str));
 		slide_set(O_LON, lon_str, strlen(lon_str));
+
+		snprintf(batt_v_str, sizeof(batt_v_str), "%.2f V",
+			sensor_value_to_double(&cat_frame.batt_v));
+		snprintf(batt_lvl_str, sizeof(batt_lvl_str), "%d%%", cat_frame.batt_lvl.val1);
+		slide_set(O_BATTERY_V, batt_v_str, strlen(batt_v_str));
+		slide_set(O_BATTERY_LVL, batt_lvl_str, strlen(batt_lvl_str));
 	}
 }
 
@@ -312,10 +317,10 @@ void app_work_sensor_read(void)
 		 */
 		snprintk(json_buf,
 			sizeof(json_buf),
-			"{\"time\":\"%s\",\"batt_v\":%d.%d,\"batt_lvl\":%d.%d,\"gps\":{\"lat\":%s,\"lon\":%s},\"vehicle\":{\"speed\":%d}}",
+			"{\"time\":\"%s\",\"batt_v\":%.2f,\"batt_lvl\":%d,\"gps\":{\"lat\":%s,\"lon\":%s},\"vehicle\":{\"speed\":%d}}",
 			ts_str,
-			cached_data.batt_v.val1, cached_data.batt_v.val2,
-			cached_data.batt_lvl.val1, cached_data.batt_lvl.val2,
+			sensor_value_to_double(&cached_data.batt_v),
+			cached_data.batt_lvl.val1,
 			lat_str, lon_str,
 			cached_data.vehicle_speed);
 		LOG_DBG("%s", json_buf);

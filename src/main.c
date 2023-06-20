@@ -214,6 +214,8 @@ void main(void)
 	slide_add(O_LAT, O_LABEL_LAT, strlen(O_LABEL_LAT));
 	slide_add(O_LON, O_LABEL_LON, strlen(O_LABEL_LON));
 	slide_add(O_VEHICLE_SPEED, O_LABEL_VEHICLE_SPEED, strlen(O_LABEL_VEHICLE_SPEED));
+	slide_add(O_BATTERY_V, O_LABEL_BATTERY, strlen(O_LABEL_BATTERY));
+	slide_add(O_BATTERY_LVL, O_LABEL_BATTERY, strlen(O_LABEL_BATTERY));
 	/* Set the title ofthe Ostentus summary slide (optional) */
 	summary_title(O_SUMMARY_TITLE, strlen(O_SUMMARY_TITLE));
 	/* Start Ostentus slideshow with 30 second delay between slides */
