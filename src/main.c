@@ -216,8 +216,14 @@ void main(void)
 	slide_add(O_VEHICLE_SPEED, O_LABEL_VEHICLE_SPEED, strlen(O_LABEL_VEHICLE_SPEED));
 	slide_add(O_BATTERY_V, O_LABEL_BATTERY, strlen(O_LABEL_BATTERY));
 	slide_add(O_BATTERY_LVL, O_LABEL_BATTERY, strlen(O_LABEL_BATTERY));
+	slide_add(O_FIRMWARE, O_LABEL_FIRMWARE, strlen(O_LABEL_FIRMWARE));
+
 	/* Set the title ofthe Ostentus summary slide (optional) */
 	summary_title(O_SUMMARY_TITLE, strlen(O_SUMMARY_TITLE));
+
+	/* Update the Firmware slide with the firmware version */
+	slide_set(O_FIRMWARE, CONFIG_MCUBOOT_IMAGE_VERSION, strlen(CONFIG_MCUBOOT_IMAGE_VERSION));
+
 	/* Start Ostentus slideshow with 30 second delay between slides */
 	slideshow(30000);
 

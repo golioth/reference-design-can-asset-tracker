@@ -11,6 +11,7 @@
 #define O_LABEL_LON "Longitude"
 #define O_LABEL_VEHICLE_SPEED "Speed"
 #define O_LABEL_BATTERY "Battery"
+#define O_LABEL_FIRMWARE "Firmware"
 #define O_SUMMARY_TITLE "Asset Tracker"
 
 /**
@@ -22,7 +23,8 @@ typedef enum {
 	O_LON,
 	O_VEHICLE_SPEED,
 	O_BATTERY_V,
-	O_BATTERY_LVL
+	O_BATTERY_LVL,
+	O_FIRMWARE
 } slide_key;
 
 void app_work_init(struct golioth_client *work_client);
