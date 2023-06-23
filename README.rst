@@ -42,7 +42,7 @@ Use ``west`` to initialize and install
 
 .. code-block:: console
 
-   cd ~/golioth-reference-design-can-asset-tracker
+   cd ~/golioth-reference-design-can-aset-tracker
    west init -m git@github.com:golioth/reference-design-can-asset-tracker.git .
    west update
    west zephyr-export
@@ -92,6 +92,23 @@ This app implements:
   delay between sending cached readings to Golioth
 * Remote Logging
 * Remote Procedure call (RPC) to reboot the device
+
+LightDB State Service
+=====================
+
+In the case where a GPS signal can not be received, a fake latitude & longitude
+can be set for the device in LightDB State. Setting the ``desired`` values in
+the Golioth Console will update the actual ``state`` values on the device.
+
+``fake_latitude``
+   Set to a string latitude value (``"-90.0"`` to ``"90.0"``).
+
+   Default value is ``"37.789980"``.
+
+``fake_longitude``
+   Set to a string longitude value (``"-180.0"`` to ``"180.0"``).
+
+   Default value is ``"-122.400860"``.
 
 Settings Service
 ================

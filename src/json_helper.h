@@ -4,13 +4,13 @@
 #include <zephyr/data/json.h>
 
 struct app_state {
-    int32_t example_int0;
-    int32_t example_int1;
+	char *fake_latitude;
+	char *fake_longitude;
 };
 
 static const struct json_obj_descr app_state_descr[] = {
-    JSON_OBJ_DESCR_PRIM(struct app_state, example_int0, JSON_TOK_NUMBER),
-    JSON_OBJ_DESCR_PRIM(struct app_state, example_int1, JSON_TOK_NUMBER)
+	JSON_OBJ_DESCR_PRIM(struct app_state, fake_latitude, JSON_TOK_STRING),
+	JSON_OBJ_DESCR_PRIM(struct app_state, fake_longitude, JSON_TOK_STRING)
 };
 
 #endif

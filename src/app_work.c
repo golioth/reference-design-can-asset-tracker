@@ -19,6 +19,7 @@ LOG_MODULE_REGISTER(app_work, LOG_LEVEL_DBG);
 
 #include "app_work.h"
 #include "app_settings.h"
+#include "app_state.h"
 #include "libostentus/libostentus.h"
 #include "lib/minmea/minmea.h"
 #include <stdio.h>
@@ -72,6 +73,27 @@ K_THREAD_STACK_DEFINE(process_rmc_frames_thread_stack, PROCESS_RMC_FRAMES_THREAD
 /* Global variables shared between threads */
 K_MUTEX_DEFINE(shared_data_mutex);
 static int g_vehicle_speed;
+
+/**
+ * Convert a floating point DD.DDD... value to a raw coordinate.
+ * The compound type struct minmea_float uses int_least32_t internally.
+ * Therefore, the coordinate precision is guaranteed to be at least
+ * [+-]DDDMM.MMMMM (five decimal digits) or ±2cm LSB at the equator.
+ */
+static inline int coord_to_minmea(struct minmea_float *f, float inp)
+{
+	int32_t val1 = (int32_t)inp;
+	float val2 = (inp - (int32_t)inp) * 100000;
+
+	if (val2 < INT32_MIN || val2 > (float)(INT32_MAX - 1)) {
+		return -ERANGE;
+	}
+
+	f->value = (int_least32_t)((val1 * 100 * 100000) + (val2 * 60));
+	f->scale = 100000;
+
+	return 0;
+}
 
 void process_can_frames_thread(void *arg1, void *arg2, void *arg3)
 {
@@ -236,15 +258,18 @@ static void process_reading(char *raw_nmea) {
 				if (rmc_frame.valid == true) {
 					/* if queue is full, message is silently dropped */
 					k_msgq_put(&rmc_msgq, &rmc_frame, K_NO_WAIT);
-
-					/*
-					 * wait_for now contains the current timestamp. Store this
-					 * for the next reading.
-					 */
-					_last_gps = wait_for;
 				} else {
-					LOG_DBG("Skipping because satellite fix not established");
+					/* use fake GPS coordinates from LightDB state instead */
+					coord_to_minmea(&rmc_frame.latitude, get_fake_latitude());
+					coord_to_minmea(&rmc_frame.longitude, get_fake_longitude());
+					rmc_frame.valid = true;
+					k_msgq_put(&rmc_msgq, &rmc_frame, K_NO_WAIT);
 				}
+				/*
+				 * wait_for now contains the current timestamp. Store this
+				 * for the next reading.
+				 */
+				_last_gps = wait_for;
 			} else {
 				/* LOG_DBG("Ignoring reading due to gps_delay_s window"); */
 			}
