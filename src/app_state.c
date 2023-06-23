@@ -17,10 +17,8 @@ LOG_MODULE_REGISTER(app_state, LOG_LEVEL_DBG);
 
 #define LATITUDE_MIN -90.0
 #define LATITUDE_MAX 90.0
-#define LATITUDE_INVALID 100.0 /* this can be any invalid latitude value */
 #define LONGITUDE_MIN -180.0
 #define LONGITUDE_MAX 180.0
-#define LONGITUDE_INVALID 200.0 /* this can be any invalid fake_longitude value */
 
 #define DEVICE_STATE_FMT "{\"fake_latitude\":\"%f\",\"fake_longitude\":\"%f\"}"
 
