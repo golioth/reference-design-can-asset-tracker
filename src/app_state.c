@@ -59,30 +59,10 @@ void app_state_init(struct golioth_client *state_client)
 	k_sem_give(&update_actual);
 }
 
-static void reset_desired_state(void)
-{
-	LOG_INF("Resetting \"%s\" LightDB State endpoint to defaults.",
-			APP_STATE_DESIRED_ENDP
-			);
-
-	char sbuf[strlen(DEVICE_STATE_FMT)+24]; /* small bit of extra space */
-
-	snprintk(sbuf, sizeof(sbuf), DEVICE_STATE_FMT, LATITUDE_INVALID, LONGITUDE_INVALID);
-
-	int err;
-
-	err = golioth_lightdb_set_cb(client, APP_STATE_DESIRED_ENDP,
-			GOLIOTH_CONTENT_FORMAT_APP_JSON, sbuf, strlen(sbuf),
-			async_handler, NULL);
-	if (err) {
-		LOG_ERR("Unable to write to LightDB State: %d", err);
-	}
-}
-
 void app_state_update_actual(void)
 {
 
-	char sbuf[strlen(DEVICE_STATE_FMT)+24]; /* small bit of extra space */
+	char sbuf[strlen(DEVICE_STATE_FMT)+24];
 
 	snprintk(sbuf, sizeof(sbuf), DEVICE_STATE_FMT, _fake_latitude, _fake_longitude);
 
@@ -121,11 +101,9 @@ int app_state_desired_handler(struct golioth_req_rsp *rsp)
 
 	if (ret < 0) {
 		LOG_ERR("Error parsing desired values: %d", ret);
-		reset_desired_state();
 		return 0;
 	}
 
-	uint8_t desired_processed_count = 0;
 	uint8_t state_change_count = 0;
 
 	if (ret & 1<<0) {
@@ -134,13 +112,9 @@ int app_state_desired_handler(struct golioth_req_rsp *rsp)
 		if ((fake_latitude <= LATITUDE_MAX) && (fake_latitude >= LATITUDE_MIN)) {
 			LOG_DBG("Validated desired fake_latitude value: %f", fake_latitude);
 			_fake_latitude = fake_latitude;
-			++desired_processed_count;
 			++state_change_count;
-		} else if (fake_latitude == LATITUDE_INVALID) {
-			LOG_DBG("No change requested for fake_latitude");
 		} else {
 			LOG_ERR("Invalid desired fake_latitude value: %f", fake_latitude);
-			++desired_processed_count;
 		}
 	}
 	if (ret & 1<<1) {
@@ -149,25 +123,15 @@ int app_state_desired_handler(struct golioth_req_rsp *rsp)
 		if ((fake_longitude <= LONGITUDE_MAX) && (fake_longitude >= LONGITUDE_MIN)) {
 			LOG_DBG("Validated desired fake_longitude value: %f", fake_longitude);
 			_fake_longitude = fake_longitude;
-			++desired_processed_count;
 			++state_change_count;
-		} else if (fake_longitude == LONGITUDE_INVALID) {
-			LOG_DBG("No change requested for fake_longitude");
 		} else {
 			LOG_ERR("Invalid desired fake_longitude value: %f", fake_longitude);
-			++desired_processed_count;
 		}
 	}
 
 	if (state_change_count) {
 		/* The state was changed, so update the state on the Golioth servers */
 		app_state_update_actual();
-	}
-	if (desired_processed_count) {
-		/* We processed some desired changes, so reset these on the server
-		 * to indicate the desired values were received.
-		 */
-		reset_desired_state();
 	}
 	return 0;
 }
