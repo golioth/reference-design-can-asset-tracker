@@ -23,6 +23,12 @@ LOG_MODULE_REGISTER(golioth_can_asset_tracker, LOG_LEVEL_DBG);
 #include "dfu/app_dfu.h"
 #include "libostentus/libostentus.h"
 
+#ifdef CONFIG_BOARD_NRF7002DK_NRF5340_CPUAPP
+#include "wifi_util.h"
+#else
+#include <samples/common/net_connect.h>
+#endif
+
 static struct golioth_client *client = GOLIOTH_SYSTEM_CLIENT_GET();
 
 K_SEM_DEFINE(connected, 0, 1);

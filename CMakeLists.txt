@@ -7,6 +7,9 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 
 project(can_asset_tracker)
 
+target_include_directories(app PUBLIC ${ZEPHYR_BASE}/subsys/net/ip)
+zephyr_library_sources_ifdef(CONFIG_BOARD_NRF7002DK_NRF5340_CPUAPP src/wifi_util.c)
+
 include_directories(src/lib/inc)
 add_compile_definitions(timegm=mktime)
 target_sources(app PRIVATE src/lib/minmea/minmea.c)
