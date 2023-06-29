@@ -20,14 +20,20 @@ LOG_MODULE_REGISTER(app_state, LOG_LEVEL_DBG);
 #define LONGITUDE_MIN -180.0
 #define LONGITUDE_MAX 180.0
 
-#define DEVICE_STATE_FMT "{\"fake_latitude\":\"%f\",\"fake_longitude\":\"%f\"}"
+#define DEVICE_STATE_FMT "{\"fake_gps_enabled\":%d,\"fake_latitude\":\"%.6f\",\"fake_longitude\":\"%.6f\"}"
 
+bool _fake_gps_enabled;
 float _fake_latitude = 37.789980;
 float _fake_longitude = -122.400860;
 
 static struct golioth_client *client;
 
 static K_SEM_DEFINE(update_actual, 0, 1);
+
+bool get_fake_gps_enabled(void)
+{
+	return _fake_gps_enabled;
+}
 
 float get_fake_latitude(void)
 {
@@ -60,9 +66,19 @@ void app_state_init(struct golioth_client *state_client)
 void app_state_update_actual(void)
 {
 
-	char sbuf[strlen(DEVICE_STATE_FMT)+24];
+	/**
+	 * _fake_gps_enabled: [0, 1] (1 char)
+	 * _fake_latitude: [-90.000000, 90.000000] (10 chars max)
+	 * _fake_longitude: [-180.000000, 180.000000] (11 chars max)
+	 * snprintk string termination: '\0' (1 char)
+	 * %d = 2 chars
+	 * %.6f = 4 chars
+	 * Worst case additional buffer length = 1 + 10 + 11 + 1 - 2 - 4 - 4 = 13
+	 */
+	char sbuf[strlen(DEVICE_STATE_FMT)+13];
 
-	snprintk(sbuf, sizeof(sbuf), DEVICE_STATE_FMT, _fake_latitude, _fake_longitude);
+	snprintk(sbuf, sizeof(sbuf), DEVICE_STATE_FMT, _fake_gps_enabled, _fake_latitude,
+		_fake_longitude);
 
 	int err;
 
@@ -105,6 +121,21 @@ int app_state_desired_handler(struct golioth_req_rsp *rsp)
 	uint8_t state_change_count = 0;
 
 	if (ret & 1<<0) {
+		/* Process fake_gps_enabled */
+		if (
+			(parsed_state.fake_gps_enabled == true)
+			|| (parsed_state.fake_gps_enabled == false)
+		) {
+			LOG_DBG("Validated desired fake_gps_enabled value: %d",
+				parsed_state.fake_gps_enabled);
+			_fake_gps_enabled = parsed_state.fake_gps_enabled;
+			++state_change_count;
+		} else {
+			LOG_ERR("Invalid desired fake_gps_enabled value: %d",
+				parsed_state.fake_gps_enabled);
+		}
+	}
+	if (ret & 1<<1) {
 		/* Process fake_latitude */
 		fake_latitude = strtof(parsed_state.fake_latitude, NULL);
 		if ((fake_latitude <= LATITUDE_MAX) && (fake_latitude >= LATITUDE_MIN)) {
@@ -115,7 +146,7 @@ int app_state_desired_handler(struct golioth_req_rsp *rsp)
 			LOG_ERR("Invalid desired fake_latitude value: %f", fake_latitude);
 		}
 	}
-	if (ret & 1<<1) {
+	if (ret & 1<<2) {
 		/* Process fake_longitude */
 		fake_longitude = strtof(parsed_state.fake_longitude, NULL);
 		if ((fake_longitude <= LONGITUDE_MAX) && (fake_longitude >= LONGITUDE_MIN)) {
@@ -131,6 +162,7 @@ int app_state_desired_handler(struct golioth_req_rsp *rsp)
 		/* The state was changed, so update the state on the Golioth servers */
 		app_state_update_actual();
 	}
+
 	return 0;
 }
 

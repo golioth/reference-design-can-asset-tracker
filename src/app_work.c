@@ -291,18 +291,29 @@ static void process_reading(char *raw_nmea) {
 				if (rmc_frame.valid == true) {
 					/* if queue is full, message is silently dropped */
 					k_msgq_put(&rmc_msgq, &rmc_frame, K_NO_WAIT);
+
+					/*
+					 * wait_for now contains the current timestamp. Store this
+					 * for the next reading.
+					 */
+					_last_gps = wait_for;
 				} else {
-					/* use fake GPS coordinates from LightDB state instead */
-					coord_to_minmea(&rmc_frame.latitude, get_fake_latitude());
-					coord_to_minmea(&rmc_frame.longitude, get_fake_longitude());
-					rmc_frame.valid = true;
-					k_msgq_put(&rmc_msgq, &rmc_frame, K_NO_WAIT);
+					if (get_fake_gps_enabled() == true) {
+						/* use fake GPS coordinates from LightDB state */
+						coord_to_minmea(&rmc_frame.latitude,
+							get_fake_latitude());
+						coord_to_minmea(&rmc_frame.longitude,
+						get_fake_longitude());
+						rmc_frame.valid = true;
+						k_msgq_put(&rmc_msgq, &rmc_frame, K_NO_WAIT);
+
+						/*
+						 * wait_for now contains the current timestamp.
+						 * Store this for the next reading.
+						 */
+						_last_gps = wait_for;
+					}
 				}
-				/*
-				 * wait_for now contains the current timestamp. Store this
-				 * for the next reading.
-				 */
-				_last_gps = wait_for;
 			} else {
 				/* LOG_DBG("Ignoring reading due to gps_delay_s window"); */
 			}

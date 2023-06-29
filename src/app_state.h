@@ -12,6 +12,7 @@
 #define APP_STATE_DESIRED_ENDP "desired"
 #define APP_STATE_ACTUAL_ENDP  "state"
 
+bool get_fake_gps_enabled(void);
 float get_fake_latitude(void);
 float get_fake_longitude(void);
 void app_state_init(struct golioth_client *state_client);
