@@ -75,21 +75,54 @@ K_MUTEX_DEFINE(shared_data_mutex);
 static int g_vehicle_speed;
 
 /**
- * Convert a floating point DD.DDD... value to a raw coordinate.
- * The compound type struct minmea_float uses int_least32_t internally.
- * Therefore, the coordinate precision is guaranteed to be at least
- * [+-]DDDMM.MMMMM (five decimal digits) or ±2cm LSB at the equator.
+ * Convert a floating point coordinate value to a minmea_float coordinate.
+ *
+ * NMEA latitude is represented as [+-]DDMM.MMMM... [-90.0, 90.0]
+ * NMEA longitude is represented as [+-]DDDMM.MMMM... [-180.0, 180.0]
+ *
+ * For example, a float -123.456789 will be be converted to:
+ *   degrees = -123
+ *   minutes = -0.456789 * 60 = -27.40734
+ *   NMEA = (degrees * 100) + minutes = -12327.40734
+ *
+ * minmea_float stores the .value as a int_least32_t with a .scale factor:
+ *   .value = (int_least32_t)(NMEA * .scale)
+ *
+ * So, NMEA -12327.40734 will be converted to:
+ *   .value = -1232740734
+ *   .scale = 100000
+ *
+ * 100000 scaling factor provides 5 digits of precision (±2cm LSB at the
+ * equator) for the minutes value.
+ *
+ * Note: 5 digits of precision is the max we can use. If we were to try to use
+ * 6 digits of precision (a scaling factor of 1000000), NMEA -12327.40734 would
+ * be converted to .value = -12327407340, which would overflow int32_t:
+ *   INT32_MIN =  -2147483648
+ *   .value    = -12327407340 <- overflow!
  */
-static inline int coord_to_minmea(struct minmea_float *f, float inp)
+static inline int coord_to_minmea(struct minmea_float *f, float coord)
 {
-	int32_t val1 = (int32_t)inp;
-	float val2 = (inp - (int32_t)inp) * 100000;
+	int32_t degrees = (int32_t)coord;
+	float minutes = (coord - degrees) * 60;
 
-	if (val2 < INT32_MIN || val2 > (float)(INT32_MAX - 1)) {
+	/* Convert degrees to NMEA [+-]DDDMM.MMMMM format */
+	degrees *= 100;
+
+	/**
+	 * Use 100000 as the scaling factor so that we can store up to 5 decimal
+	 * places of minutes in minmea_float.value
+	 */
+	degrees *= 100000;
+	minutes *= 100000;
+
+	/* Make sure we don't overflow int32_t */
+	if (minutes < INT32_MIN || minutes > (float)(INT32_MAX - 1)) {
 		return -ERANGE;
 	}
 
-	f->value = (int_least32_t)((val1 * 100 * 100000) + (val2 * 60));
+	/* minmea_float uses int_least32_t internally */
+	f->value = (int_least32_t)(degrees + minutes);
 	f->scale = 100000;
 
 	return 0;
