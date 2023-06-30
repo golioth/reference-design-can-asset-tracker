@@ -10,8 +10,8 @@
 	};
 
 	aliases {
-		click-uart = &uart1;
-		click-i2c = &i2c2;
+		click-uart = &arduino_serial;
+		click-i2c = &arduino_i2c;
 		golioth-led = &led2;
 		gnss7-sel = &gnss7_sel;
 	};
@@ -19,7 +19,7 @@
 	gpio_logic {
 		compatible = "gpio-leds";
 		gnss7_sel: gnss7_sel {
-			gpios = <&gpio0 15 GPIO_ACTIVE_HIGH>;
+			gpios = <&arduino_header 1 GPIO_ACTIVE_HIGH>; /* A1 */
 		};
 	};
 };
