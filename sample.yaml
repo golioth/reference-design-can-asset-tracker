@@ -1,3 +1,6 @@
+# Copyright (c) 2023 Golioth, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
 sample:
   description: CAN Asset Tracker Reference Design
   name: can_asset_tracker
