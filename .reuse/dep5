@@ -3,6 +3,6 @@ Upstream-Name: reference-design-can-asset-tracker
 Upstream-Contact: Golioth, Inc. <https://golioth.io>
 Source: https://github.com/golioth/reference-design-can-asset-tracker
 
-Files: README.rst CODE_OF_CONDUCT.md .checkpatch.conf utility/*
+Files: README.rst CODE_OF_CONDUCT.md .checkpatch.conf
 Copyright: 2023 Golioth, Inc. <https://golioth.io>
 License: Apache-2.0
