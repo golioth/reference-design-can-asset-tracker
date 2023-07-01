@@ -7,6 +7,7 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(app_work, LOG_LEVEL_DBG);
 
+#include <stdio.h>
 #include <zephyr/kernel.h>
 #include <zephyr/kernel/thread_stack.h>
 #include <net/golioth/system_client.h>
@@ -22,7 +23,6 @@ LOG_MODULE_REGISTER(app_work, LOG_LEVEL_DBG);
 #include "app_state.h"
 #include "libostentus/libostentus.h"
 #include "lib/minmea/minmea.h"
-#include <stdio.h>
 
 #ifdef CONFIG_ALUDEL_BATTERY_MONITOR
 #include "battery_monitor/battery.h"
@@ -225,32 +225,35 @@ void process_rmc_frames_thread(void *arg1, void *arg2, void *arg3)
 	ARG_UNUSED(arg2);
 	ARG_UNUSED(arg3);
 	int err;
-#ifdef CONFIG_ALUDEL_BATTERY_MONITOR
+	#ifdef CONFIG_ALUDEL_BATTERY_MONITOR
 	struct sensor_value batt_v;
 	struct sensor_value batt_lvl;
-#endif
+	#endif
 	struct minmea_sentence_rmc rmc_frame;
 	struct can_asset_tracker_data cat_frame;
 	char lat_str[12];
 	char lon_str[12];
+	#ifdef CONFIG_ALUDEL_BATTERY_MONITOR
 	char batt_v_str[7];
 	char batt_lvl_str[5];
+	#endif
 
 	while (k_msgq_get(&rmc_msgq, &rmc_frame, K_FOREVER) == 0) {
 		cat_frame.rmc_frame = rmc_frame;
 
 		/* Log battery levels if possible */
+		#ifdef CONFIG_ALUDEL_BATTERY_MONITOR
+		read_battery_info(&batt_v, &batt_lvl);
+		cat_frame.batt_v.val1 = batt_v.val1;
+		cat_frame.batt_v.val2 = batt_v.val2;
+		cat_frame.batt_lvl.val1 = batt_lvl.val1;
+		cat_frame.batt_lvl.val2 = batt_lvl.val2;
+		#else
 		cat_frame.batt_v.val1 = 0;
 		cat_frame.batt_v.val2 = 0;
 		cat_frame.batt_lvl.val1 = 0;
 		cat_frame.batt_lvl.val2 = 0;
-		IF_ENABLED(CONFIG_ALUDEL_BATTERY_MONITOR, (
-			read_battery_info(&batt_v, &batt_lvl);
-			cat_frame.batt_v.val1 = batt_v.val1;
-			cat_frame.batt_v.val2 = batt_v.val2;
-			cat_frame.batt_lvl.val1 = batt_lvl.val1;
-			cat_frame.batt_lvl.val2 = batt_lvl.val2;
-		));
+		#endif
 
 		/* Use the latest vehicle speed reading received from the ECU */
 		k_mutex_lock(&shared_data_mutex, K_FOREVER);
@@ -268,11 +271,13 @@ void process_rmc_frames_thread(void *arg1, void *arg2, void *arg3)
 		slide_set(O_LAT, lat_str, strlen(lat_str));
 		slide_set(O_LON, lon_str, strlen(lon_str));
 
+		#ifdef CONFIG_ALUDEL_BATTERY_MONITOR
 		snprintf(batt_v_str, sizeof(batt_v_str), "%.2f V",
 			sensor_value_to_double(&cat_frame.batt_v));
 		snprintf(batt_lvl_str, sizeof(batt_lvl_str), "%d%%", cat_frame.batt_lvl.val1);
 		slide_set(O_BATTERY_V, batt_v_str, strlen(batt_v_str));
 		slide_set(O_BATTERY_LVL, batt_lvl_str, strlen(batt_lvl_str));
+		#endif
 	}
 }
 

@@ -10,7 +10,9 @@
 #define O_LABEL_LAT "Latitude"
 #define O_LABEL_LON "Longitude"
 #define O_LABEL_VEHICLE_SPEED "Speed"
+#ifdef CONFIG_ALUDEL_BATTERY_MONITOR
 #define O_LABEL_BATTERY "Battery"
+#endif
 #define O_LABEL_FIRMWARE "Firmware"
 #define O_SUMMARY_TITLE "Asset Tracker"
 
@@ -22,8 +24,10 @@ typedef enum {
 	O_LAT,
 	O_LON,
 	O_VEHICLE_SPEED,
+	#ifdef CONFIG_ALUDEL_BATTERY_MONITOR
 	O_BATTERY_V,
 	O_BATTERY_LVL,
+	#endif
 	O_FIRMWARE
 } slide_key;
 
