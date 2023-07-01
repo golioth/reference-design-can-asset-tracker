@@ -17,7 +17,6 @@
 		compatible = "gpio-leds";
 		gnss7_sel: gnss7_sel {
 			gpios = <&feather_header 1 GPIO_ACTIVE_HIGH>;
-			label = "Interface Select for GNSS7 Click";
 		};
 	};
 };
