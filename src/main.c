@@ -7,18 +7,19 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(golioth_can_asset_tracker, LOG_LEVEL_DBG);
 
+#include <modem/modem_info.h>
 #include <modem/lte_lc.h>
 #include <net/golioth/system_client.h>
 #include <samples/common/net_connect.h>
 #include <zephyr/net/coap.h>
+#include <zephyr/drivers/gpio.h>
+
 #include "app_rpc.h"
 #include "app_settings.h"
 #include "app_state.h"
 #include "app_work.h"
 #include "dfu/app_dfu.h"
 #include "libostentus/libostentus.h"
-
-#include <zephyr/drivers/gpio.h>
 
 static struct golioth_client *client = GOLIOTH_SYSTEM_CLIENT_GET();
 
@@ -124,10 +125,22 @@ void network_led_set(uint8_t state) {
 void main(void)
 {
 	int err;
+	char sbuf[128];
+
+	/* Initialize modem info */
+	err = modem_info_init();
+	if (err) {
+		LOG_ERR("Failed to initialize modem info: %d", err);
+	}
+
+	/* Print modem firmware version */
+	modem_info_string_get(MODEM_INFO_FW_VERSION, sbuf, sizeof(sbuf));
+	LOG_INF("Modem firmware version: %s", sbuf);
+
+	/* Print app firmware version */
+	LOG_INF("App firmware version: %s", CONFIG_MCUBOOT_IMAGE_VERSION);
 
 	LOG_INF("Started CAN Asset Tracker app");
-
-	LOG_INF("Firmware version: %s", CONFIG_MCUBOOT_IMAGE_VERSION);
 
 	/* Update Ostentus LEDS using bitmask (Power On and Battery)*/
 	led_bitmask(LED_POW | LED_BAT);
