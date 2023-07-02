@@ -7,8 +7,10 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(golioth_can_asset_tracker, LOG_LEVEL_DBG);
 
-#include <modem/modem_info.h>
 #include <modem/lte_lc.h>
+#ifdef CONFIG_MODEM_INFO
+#include <modem/modem_info.h>
+#endif
 #include <net/golioth/system_client.h>
 #include <samples/common/net_connect.h>
 #include <zephyr/net/coap.h>
@@ -125,6 +127,13 @@ void network_led_set(uint8_t state) {
 void main(void)
 {
 	int err;
+
+	/* Get system thread id so loop delay change event can wake main */
+	_system_thread = k_current_get();
+
+	LOG_INF("Started CAN Asset Tracker app");
+
+	#ifdef CONFIG_MODEM_INFO
 	char sbuf[128];
 
 	/* Initialize modem info */
@@ -133,14 +142,13 @@ void main(void)
 		LOG_ERR("Failed to initialize modem info: %d", err);
 	}
 
-	/* Print modem firmware version */
+	/* Log modem firmware version */
 	modem_info_string_get(MODEM_INFO_FW_VERSION, sbuf, sizeof(sbuf));
 	LOG_INF("Modem firmware version: %s", sbuf);
+	#endif
 
 	/* Print app firmware version */
 	LOG_INF("App firmware version: %s", CONFIG_MCUBOOT_IMAGE_VERSION);
-
-	LOG_INF("Started CAN Asset Tracker app");
 
 	/* Update Ostentus LEDS using bitmask (Power On and Battery)*/
 	led_bitmask(LED_POW | LED_BAT);
@@ -148,9 +156,6 @@ void main(void)
 	/* Show Golioth Logo on Ostentus ePaper screen */
 	show_splash();
 	k_sleep(K_SECONDS(4));
-
-	/* Get system thread id so loop delay change event can wake main */
-	_system_thread = k_current_get();
 
 	/* Initialize Golioth logo LED */
 	err = gpio_pin_configure_dt(&golioth_led, GPIO_OUTPUT_INACTIVE);
@@ -204,15 +209,15 @@ void main(void)
 	err = gpio_pin_configure_dt(&user_btn, GPIO_INPUT);
 	if (err != 0) {
 		printk("Error %d: failed to configure %s pin %d\n",
-				err, user_btn.port->name, user_btn.pin);
+			err, user_btn.port->name, user_btn.pin);
 		return;
 	}
 
 	err = gpio_pin_interrupt_configure_dt(&user_btn,
-	                                      GPIO_INT_EDGE_TO_ACTIVE);
+		GPIO_INT_EDGE_TO_ACTIVE);
 	if (err != 0) {
 		printk("Error %d: failed to configure interrupt on %s pin %d\n",
-				err, user_btn.port->name, user_btn.pin);
+			err, user_btn.port->name, user_btn.pin);
 		return;
 	}
 
