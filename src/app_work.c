@@ -7,7 +7,6 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(app_work, LOG_LEVEL_DBG);
 
-#include <stdio.h>
 #include <zephyr/kernel.h>
 #include <zephyr/kernel/thread_stack.h>
 #include <net/golioth/system_client.h>
@@ -210,7 +209,7 @@ void process_can_frames_thread(void *arg1, void *arg2, void *arg3)
 		k_mutex_unlock(&shared_data_mutex);
 
 		/* Update Ostentus slide values */
-		snprintf(vehicle_speed_str, sizeof(vehicle_speed_str),
+		snprintk(vehicle_speed_str, sizeof(vehicle_speed_str),
 			"%d km/h", vehicle_speed);
 		slide_set(O_VEHICLE_SPEED, vehicle_speed_str,
 			strlen(vehicle_speed_str));
@@ -266,15 +265,15 @@ void process_rmc_frames_thread(void *arg1, void *arg2, void *arg3)
 		}
 
 		/* Update Ostentus slide values */
-		snprintf(lat_str, sizeof(lat_str), "%f", minmea_tocoord(&rmc_frame.latitude));
-		snprintf(lon_str, sizeof(lon_str), "%f", minmea_tocoord(&rmc_frame.longitude));
+		snprintk(lat_str, sizeof(lat_str), "%f", minmea_tocoord(&rmc_frame.latitude));
+		snprintk(lon_str, sizeof(lon_str), "%f", minmea_tocoord(&rmc_frame.longitude));
 		slide_set(O_LAT, lat_str, strlen(lat_str));
 		slide_set(O_LON, lon_str, strlen(lon_str));
 
 		#ifdef CONFIG_ALUDEL_BATTERY_MONITOR
-		snprintf(batt_v_str, sizeof(batt_v_str), "%.2f V",
+		snprintk(batt_v_str, sizeof(batt_v_str), "%.2f V",
 			sensor_value_to_double(&cat_frame.batt_v));
-		snprintf(batt_lvl_str, sizeof(batt_lvl_str), "%d%%", cat_frame.batt_lvl.val1);
+		snprintk(batt_lvl_str, sizeof(batt_lvl_str), "%d%%", cat_frame.batt_lvl.val1);
 		slide_set(O_BATTERY_V, batt_v_str, strlen(batt_v_str));
 		slide_set(O_BATTERY_LVL, batt_lvl_str, strlen(batt_lvl_str));
 		#endif
@@ -371,11 +370,11 @@ void app_work_sensor_read(void)
 	char lon_str[12];
 
 	while (k_msgq_get(&cat_msgq, &cached_data, K_NO_WAIT) == 0) {
-		snprintf(lat_str, sizeof(lat_str), "%f",
+		snprintk(lat_str, sizeof(lat_str), "%f",
 			minmea_tocoord(&cached_data.rmc_frame.latitude));
-		snprintf(lon_str, sizeof(lon_str), "%f",
+		snprintk(lon_str, sizeof(lon_str), "%f",
 			minmea_tocoord(&cached_data.rmc_frame.longitude));
-		snprintf(ts_str, sizeof(ts_str), "20%02d-%02d-%02dT%02d:%02d:%02d.%03dZ",
+		snprintk(ts_str, sizeof(ts_str), "20%02d-%02d-%02dT%02d:%02d:%02d.%03dZ",
 			cached_data.rmc_frame.date.year,
 			cached_data.rmc_frame.date.month,
 			cached_data.rmc_frame.date.day,
