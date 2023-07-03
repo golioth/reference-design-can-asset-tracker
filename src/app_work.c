@@ -208,6 +208,9 @@ void process_can_frames_thread(void *arg1, void *arg2, void *arg3)
 		g_vehicle_speed = vehicle_speed;
 		k_mutex_unlock(&shared_data_mutex);
 
+		/* Log vehicle speed */
+		LOG_INF("Vehicle Speed Sensor: %d km/h", vehicle_speed);
+
 		/* Update Ostentus slide values */
 		snprintk(vehicle_speed_str, sizeof(vehicle_speed_str),
 			"%d km/h", vehicle_speed);
@@ -247,6 +250,8 @@ void process_rmc_frames_thread(void *arg1, void *arg2, void *arg3)
 		cat_frame.batt_v.val2 = batt_v.val2;
 		cat_frame.batt_lvl.val1 = batt_lvl.val1;
 		cat_frame.batt_lvl.val2 = batt_lvl.val2;
+		LOG_INF("Battery measurement: voltage=%.2f V, level=%d%%",
+		sensor_value_to_double(&batt_v), batt_lvl.val1);
 		#else
 		cat_frame.batt_v.val1 = 0;
 		cat_frame.batt_v.val2 = 0;
@@ -263,6 +268,9 @@ void process_rmc_frames_thread(void *arg1, void *arg2, void *arg3)
 		if (err) {
 			LOG_ERR("Unable to add cat_frame to cat_msgq: %d", err);
 		}
+
+		LOG_INF("GPS: latitude=%f, longitude=%f", minmea_tocoord(&rmc_frame.latitude),
+			minmea_tocoord(&rmc_frame.longitude));
 
 		/* Update Ostentus slide values */
 		snprintk(lat_str, sizeof(lat_str), "%f", minmea_tocoord(&rmc_frame.latitude));
