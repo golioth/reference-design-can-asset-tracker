@@ -100,6 +100,12 @@ In the case where a GPS signal can not be received, a fake latitude & longitude
 can be set for the device in LightDB State. Setting the ``desired`` values in
 the Golioth Console will update the actual ``state`` values on the device.
 
+``fake_gps_enabled``
+   Set to a boolean value (``true`` or ``false``) to enable or disable the
+   fake GPS functionality.
+
+   Default value is ``"37.789980"``.
+
 ``fake_latitude``
    Set to a string latitude value (``"-90.0"`` to ``"90.0"``).
 
