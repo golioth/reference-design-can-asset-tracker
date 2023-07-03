@@ -104,7 +104,7 @@ the Golioth Console will update the actual ``state`` values on the device.
    Set to a boolean value (``true`` or ``false``) to enable or disable the
    fake GPS functionality.
 
-   Default value is ``"37.789980"``.
+   Default value is ``false``.
 
 ``fake_latitude``
    Set to a string latitude value (``"-90.0"`` to ``"90.0"``).
