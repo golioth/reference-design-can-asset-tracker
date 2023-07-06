@@ -27,14 +27,14 @@ LOG_MODULE_REGISTER(app_work, LOG_LEVEL_DBG);
 #include "battery_monitor/battery.h"
 #endif
 
-#define NMEA_SIZE 128
-#define OBD2_PID_REQUEST_ID 0x7DF
-#define ODB2_PID_REQUEST_DATA_LENGTH 2
-#define OBD2_PID_RESPONSE_ID 0x7E8
-#define OBD2_PID_RESPONSE_DLC 8
+#define NMEA_SIZE		       128
+#define OBD2_PID_REQUEST_ID	       0x7DF
+#define ODB2_PID_REQUEST_DATA_LENGTH   2
+#define OBD2_PID_RESPONSE_ID	       0x7E8
+#define OBD2_PID_RESPONSE_DLC	       8
 #define OBD2_SERVICE_SHOW_CURRENT_DATA 0x01
-#define ODB2_PID_VEHICLE_SPEED 0x0D
-#define ODB2_PID_VEHICLE_SPEED_DLC 4
+#define ODB2_PID_VEHICLE_SPEED	       0x0D
+#define ODB2_PID_VEHICLE_SPEED_DLC     4
 
 static struct golioth_client *client;
 
@@ -58,13 +58,13 @@ K_MSGQ_DEFINE(rmc_msgq, sizeof(struct minmea_sentence_rmc), 2, 4);
 CAN_MSGQ_DEFINE(can_msgq, 2);
 
 #define PROCESS_CAN_FRAMES_THREAD_STACK_SIZE 2048
-#define PROCESS_CAN_FRAMES_THREAD_PRIORITY 2
+#define PROCESS_CAN_FRAMES_THREAD_PRIORITY   2
 static k_tid_t process_can_frames_tid;
 struct k_thread process_can_frames_thread_data;
 K_THREAD_STACK_DEFINE(process_can_frames_thread_stack, PROCESS_CAN_FRAMES_THREAD_STACK_SIZE);
 
 #define PROCESS_RMC_FRAMES_THREAD_STACK_SIZE 2048
-#define PROCESS_RMC_FRAMES_THREAD_PRIORITY 2
+#define PROCESS_RMC_FRAMES_THREAD_PRIORITY   2
 static k_tid_t process_rmc_frames_tid;
 struct k_thread process_rmc_frames_thread_data;
 K_THREAD_STACK_DEFINE(process_rmc_frames_thread_stack, PROCESS_RMC_FRAMES_THREAD_STACK_SIZE);
@@ -136,25 +136,14 @@ void process_can_frames_thread(void *arg1, void *arg2, void *arg3)
 	int can_filter_id;
 	struct can_frame can_frame;
 	const struct can_filter can_filter = {
-		.flags = CAN_FILTER_DATA,
-		.id = OBD2_PID_RESPONSE_ID,
-		.mask = CAN_STD_ID_MASK
-	};
+		.flags = CAN_FILTER_DATA, .id = OBD2_PID_RESPONSE_ID, .mask = CAN_STD_ID_MASK};
 	struct can_frame vehicle_speed_request = {
 		.flags = 0,
 		.id = OBD2_PID_REQUEST_ID,
 		.dlc = 8,
-		.data = {
-			ODB2_PID_REQUEST_DATA_LENGTH,
-			OBD2_SERVICE_SHOW_CURRENT_DATA,
-			ODB2_PID_VEHICLE_SPEED,
-			0xCC, /* not used (ISO 15765-2 suggests 0xCC) */
-			0xCC,
-			0xCC,
-			0xCC,
-			0xCC
-		}
-	};
+		.data = {ODB2_PID_REQUEST_DATA_LENGTH, OBD2_SERVICE_SHOW_CURRENT_DATA,
+			 ODB2_PID_VEHICLE_SPEED, 0xCC, /* not used (ISO 15765-2 suggests 0xCC) */
+			 0xCC, 0xCC, 0xCC, 0xCC}};
 	int vehicle_speed;
 	uint8_t data_len;
 	char vehicle_speed_str[9];
@@ -190,14 +179,15 @@ void process_can_frames_thread(void *arg1, void *arg2, void *arg3)
 			/* Wait up to 500ms for a response (possibly multiple responses in queue) */
 			while (k_msgq_get(&can_msgq, &can_frame, K_MSEC(500)) == 0) {
 				data_len = can_dlc_to_bytes(can_frame.dlc);
-				if ((data_len != OBD2_PID_RESPONSE_DLC)
-					&& (data_len != ODB2_PID_VEHICLE_SPEED_DLC)) {
+				if ((data_len != OBD2_PID_RESPONSE_DLC) &&
+				    (data_len != ODB2_PID_VEHICLE_SPEED_DLC)) {
 					LOG_ERR("Wrong CAN frame data length: %u", data_len);
 					continue;
 				}
 
-				if ((can_frame.data[1] == (OBD2_SERVICE_SHOW_CURRENT_DATA + 0x40))
-					&& (can_frame.data[2] == ODB2_PID_VEHICLE_SPEED)) {
+				if ((can_frame.data[1] ==
+				     (OBD2_SERVICE_SHOW_CURRENT_DATA + 0x40)) &&
+				    (can_frame.data[2] == ODB2_PID_VEHICLE_SPEED)) {
 					vehicle_speed = can_frame.data[3];
 				}
 			}
@@ -212,10 +202,8 @@ void process_can_frames_thread(void *arg1, void *arg2, void *arg3)
 		LOG_INF("Vehicle Speed Sensor: %d km/h", vehicle_speed);
 
 		/* Update Ostentus slide values */
-		snprintk(vehicle_speed_str, sizeof(vehicle_speed_str),
-			"%d km/h", vehicle_speed);
-		slide_set(O_VEHICLE_SPEED, vehicle_speed_str,
-			strlen(vehicle_speed_str));
+		snprintk(vehicle_speed_str, sizeof(vehicle_speed_str), "%d km/h", vehicle_speed);
+		slide_set(O_VEHICLE_SPEED, vehicle_speed_str, strlen(vehicle_speed_str));
 
 		k_sleep(K_SECONDS(get_vehicle_speed_delay_s()));
 	}
@@ -227,37 +215,37 @@ void process_rmc_frames_thread(void *arg1, void *arg2, void *arg3)
 	ARG_UNUSED(arg2);
 	ARG_UNUSED(arg3);
 	int err;
-	#ifdef CONFIG_ALUDEL_BATTERY_MONITOR
+#ifdef CONFIG_ALUDEL_BATTERY_MONITOR
 	struct sensor_value batt_v;
 	struct sensor_value batt_lvl;
-	#endif
+#endif
 	struct minmea_sentence_rmc rmc_frame;
 	struct can_asset_tracker_data cat_frame;
 	char lat_str[12];
 	char lon_str[12];
-	#ifdef CONFIG_ALUDEL_BATTERY_MONITOR
+#ifdef CONFIG_ALUDEL_BATTERY_MONITOR
 	char batt_v_str[7];
 	char batt_lvl_str[5];
-	#endif
+#endif
 
 	while (k_msgq_get(&rmc_msgq, &rmc_frame, K_FOREVER) == 0) {
 		cat_frame.rmc_frame = rmc_frame;
 
-		/* Log battery levels if possible */
-		#ifdef CONFIG_ALUDEL_BATTERY_MONITOR
+/* Log battery levels if possible */
+#ifdef CONFIG_ALUDEL_BATTERY_MONITOR
 		read_battery_info(&batt_v, &batt_lvl);
 		cat_frame.batt_v.val1 = batt_v.val1;
 		cat_frame.batt_v.val2 = batt_v.val2;
 		cat_frame.batt_lvl.val1 = batt_lvl.val1;
 		cat_frame.batt_lvl.val2 = batt_lvl.val2;
 		LOG_INF("Battery measurement: voltage=%.2f V, level=%d%%",
-		sensor_value_to_double(&batt_v), batt_lvl.val1);
-		#else
+			sensor_value_to_double(&batt_v), batt_lvl.val1);
+#else
 		cat_frame.batt_v.val1 = 0;
 		cat_frame.batt_v.val2 = 0;
 		cat_frame.batt_lvl.val1 = 0;
 		cat_frame.batt_lvl.val2 = 0;
-		#endif
+#endif
 
 		/* Use the latest vehicle speed reading received from the ECU */
 		k_mutex_lock(&shared_data_mutex, K_FOREVER);
@@ -278,18 +266,19 @@ void process_rmc_frames_thread(void *arg1, void *arg2, void *arg3)
 		slide_set(O_LAT, lat_str, strlen(lat_str));
 		slide_set(O_LON, lon_str, strlen(lon_str));
 
-		#ifdef CONFIG_ALUDEL_BATTERY_MONITOR
+#ifdef CONFIG_ALUDEL_BATTERY_MONITOR
 		snprintk(batt_v_str, sizeof(batt_v_str), "%.2f V",
-			sensor_value_to_double(&cat_frame.batt_v));
+			 sensor_value_to_double(&cat_frame.batt_v));
 		snprintk(batt_lvl_str, sizeof(batt_lvl_str), "%d%%", cat_frame.batt_lvl.val1);
 		slide_set(O_BATTERY_V, batt_v_str, strlen(batt_v_str));
 		slide_set(O_BATTERY_LVL, batt_lvl_str, strlen(batt_lvl_str));
-		#endif
+#endif
 	}
 }
 
 /* This is called from the UART irq callback to try to get out fast */
-static void process_reading(char *raw_nmea) {
+static void process_reading(char *raw_nmea)
+{
 	/* _last_gps timestamp records when the previous GPS value was stored */
 	static uint64_t _last_gps;
 	enum minmea_sentence_id sid;
@@ -313,9 +302,9 @@ static void process_reading(char *raw_nmea) {
 					if (get_fake_gps_enabled() == true) {
 						/* use fake GPS coordinates from LightDB state */
 						coord_to_minmea(&rmc_frame.latitude,
-							get_fake_latitude());
+								get_fake_latitude());
 						coord_to_minmea(&rmc_frame.longitude,
-						get_fake_longitude());
+								get_fake_longitude());
 						rmc_frame.valid = true;
 						k_msgq_put(&rmc_msgq, &rmc_frame, K_NO_WAIT);
 
@@ -334,7 +323,8 @@ static void process_reading(char *raw_nmea) {
 }
 
 /* UART callback */
-void serial_cb(const struct device *dev, void *user_data) {
+void serial_cb(const struct device *dev, void *user_data)
+{
 	uint8_t c;
 	static char rx_buf[NMEA_SIZE];
 	static int rx_buf_pos;
@@ -353,7 +343,7 @@ void serial_cb(const struct device *dev, void *user_data) {
 				rx_buf[rx_buf_pos] = '\0';
 			} else {
 				rx_buf[rx_buf_pos] = '\n';
-				rx_buf[rx_buf_pos+1] = '\0';
+				rx_buf[rx_buf_pos + 1] = '\0';
 			}
 
 			process_reading(rx_buf);
@@ -379,41 +369,36 @@ void app_work_sensor_read(void)
 
 	while (k_msgq_get(&cat_msgq, &cached_data, K_NO_WAIT) == 0) {
 		snprintk(lat_str, sizeof(lat_str), "%f",
-			minmea_tocoord(&cached_data.rmc_frame.latitude));
+			 minmea_tocoord(&cached_data.rmc_frame.latitude));
 		snprintk(lon_str, sizeof(lon_str), "%f",
-			minmea_tocoord(&cached_data.rmc_frame.longitude));
+			 minmea_tocoord(&cached_data.rmc_frame.longitude));
 		snprintk(ts_str, sizeof(ts_str), "20%02d-%02d-%02dT%02d:%02d:%02d.%03dZ",
-			cached_data.rmc_frame.date.year,
-			cached_data.rmc_frame.date.month,
-			cached_data.rmc_frame.date.day,
-			cached_data.rmc_frame.time.hours,
-			cached_data.rmc_frame.time.minutes,
-			cached_data.rmc_frame.time.seconds,
-			cached_data.rmc_frame.time.microseconds);
+			 cached_data.rmc_frame.date.year, cached_data.rmc_frame.date.month,
+			 cached_data.rmc_frame.date.day, cached_data.rmc_frame.time.hours,
+			 cached_data.rmc_frame.time.minutes, cached_data.rmc_frame.time.seconds,
+			 cached_data.rmc_frame.time.microseconds);
 
 		/*
 		 * `time` will not appear in the `data` payload once received
 		 * by Golioth LightDB Stream, but instead will override the
 		 * `time` timestamp of the data.
 		 */
-		snprintk(json_buf,
-			sizeof(json_buf),
-			"{\"time\":\"%s\",\"batt_v\":%.2f,\"batt_lvl\":%d,\"gps\":{\"lat\":%s,\"lon\":%s},\"vehicle\":{\"speed\":%d}}",
-			ts_str,
-			sensor_value_to_double(&cached_data.batt_v),
-			cached_data.batt_lvl.val1,
-			lat_str, lon_str,
-			cached_data.vehicle_speed);
+		snprintk(json_buf, sizeof(json_buf),
+			 "{\"time\":\"%s\",\"batt_v\":%.2f,\"batt_lvl\":%d,\"gps\":{\"lat\":%s,"
+			 "\"lon\":%s},\"vehicle\":{\"speed\":%d}}",
+			 ts_str, sensor_value_to_double(&cached_data.batt_v),
+			 cached_data.batt_lvl.val1, lat_str, lon_str, cached_data.vehicle_speed);
 		LOG_DBG("%s", json_buf);
 
-		err = golioth_stream_push(client, "tracker",
-			GOLIOTH_CONTENT_FORMAT_APP_JSON,
-			json_buf, strlen(json_buf));
-		if (err) LOG_ERR("Failed to send sensor data to Golioth: %d", err);
+		err = golioth_stream_push(client, "tracker", GOLIOTH_CONTENT_FORMAT_APP_JSON,
+					  json_buf, strlen(json_buf));
+		if (err)
+			LOG_ERR("Failed to send sensor data to Golioth: %d", err);
 	}
 }
 
-void app_work_init(struct golioth_client* work_client) {
+void app_work_init(struct golioth_client *work_client)
+{
 	int err;
 
 	client = work_client;
@@ -448,21 +433,19 @@ void app_work_init(struct golioth_client* work_client) {
 	}
 
 	/* Spawn a thread to process CAN frames */
-	process_can_frames_tid = k_thread_create(&process_can_frames_thread_data,
-		process_can_frames_thread_stack,
-		K_THREAD_STACK_SIZEOF(process_can_frames_thread_stack),
-		process_can_frames_thread, NULL, NULL, NULL,
-		PROCESS_CAN_FRAMES_THREAD_PRIORITY, 0, K_NO_WAIT);
+	process_can_frames_tid = k_thread_create(
+		&process_can_frames_thread_data, process_can_frames_thread_stack,
+		K_THREAD_STACK_SIZEOF(process_can_frames_thread_stack), process_can_frames_thread,
+		NULL, NULL, NULL, PROCESS_CAN_FRAMES_THREAD_PRIORITY, 0, K_NO_WAIT);
 	if (!process_can_frames_tid) {
 		LOG_ERR("Error spawning CAN frame processing thread");
 	}
 
 	/* Spawn a thread to process RMC frames */
-	process_rmc_frames_tid = k_thread_create(&process_rmc_frames_thread_data,
-		process_rmc_frames_thread_stack,
-		K_THREAD_STACK_SIZEOF(process_rmc_frames_thread_stack),
-		process_rmc_frames_thread, NULL, NULL, NULL,
-		PROCESS_RMC_FRAMES_THREAD_PRIORITY, 0, K_NO_WAIT);
+	process_rmc_frames_tid = k_thread_create(
+		&process_rmc_frames_thread_data, process_rmc_frames_thread_stack,
+		K_THREAD_STACK_SIZEOF(process_rmc_frames_thread_stack), process_rmc_frames_thread,
+		NULL, NULL, NULL, PROCESS_RMC_FRAMES_THREAD_PRIORITY, 0, K_NO_WAIT);
 	if (!process_rmc_frames_tid) {
 		LOG_ERR("Error spawning RMC frame processing thread");
 	}

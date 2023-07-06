@@ -36,9 +36,7 @@ int32_t get_vehicle_speed_delay_s(void)
 	return _vehicle_speed_delay_s;
 }
 
-enum golioth_settings_status on_setting(
-		const char *key,
-		const struct golioth_settings_value *value)
+enum golioth_settings_status on_setting(const char *key, const struct golioth_settings_value *value)
 {
 
 	LOG_DBG("Received setting: key = %s, type = %d", key, value->type);
@@ -79,8 +77,7 @@ enum golioth_settings_status on_setting(
 		/* Only update if value has changed */
 		if (_gps_delay_s == (int32_t)value->i64) {
 			LOG_DBG("Received GPS_DELAY_S already matches local value.");
-		}
-		else {
+		} else {
 			_gps_delay_s = (int32_t)value->i64;
 			LOG_INF("Set GPS delay to %d seconds", _gps_delay_s);
 		}
@@ -102,7 +99,7 @@ enum golioth_settings_status on_setting(
 		} else {
 			_vehicle_speed_delay_s = (int32_t)value->i64;
 			LOG_INF("Set vehicle speed readings delay to %d seconds",
-			_vehicle_speed_delay_s);
+				_vehicle_speed_delay_s);
 		}
 		return GOLIOTH_SETTINGS_SUCCESS;
 	}
@@ -117,7 +114,8 @@ void app_settings_init(struct golioth_client *state_client)
 	app_register_settings(client);
 }
 
-void app_settings_observe(void) {
+void app_settings_observe(void)
+{
 	int err = golioth_settings_observe(client);
 	if (err) {
 		LOG_ERR("Failed to observe settings: %d", err);

@@ -36,8 +36,8 @@ static void reboot_work_handler(struct k_work *work)
 K_WORK_DEFINE(reboot_work, reboot_work_handler);
 
 static enum golioth_rpc_status on_set_log_level(QCBORDecodeContext *request_params_array,
-					   QCBOREncodeContext *response_detail_map,
-					   void *callback_arg)
+						QCBOREncodeContext *response_detail_map,
+						void *callback_arg)
 {
 	double a;
 	uint32_t log_level;
@@ -76,8 +76,8 @@ static enum golioth_rpc_status on_set_log_level(QCBORDecodeContext *request_para
 }
 
 static enum golioth_rpc_status on_reboot(QCBORDecodeContext *request_params_array,
-					   QCBOREncodeContext *response_detail_map,
-					   void *callback_arg)
+					 QCBOREncodeContext *response_detail_map,
+					 void *callback_arg)
 {
 	k_work_submit(&reboot_work);
 
@@ -97,7 +97,8 @@ void app_rpc_init(struct golioth_client *state_client)
 	app_register_rpc(client);
 }
 
-void app_rpc_observe(void) {
+void app_rpc_observe(void)
+{
 	int err = golioth_rpc_observe(client);
 	if (err) {
 		LOG_ERR("Failed to observe RPC: %d", err);

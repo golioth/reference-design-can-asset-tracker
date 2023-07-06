@@ -50,8 +50,7 @@ struct battery_level_point {
  * @return the estimated remaining capacity in parts per ten
  * thousand.
  */
-unsigned int battery_level_pptt(unsigned int batt_mV,
-				const struct battery_level_point *curve);
+unsigned int battery_level_pptt(unsigned int batt_mV, const struct battery_level_point *curve);
 
 /**
  * @brief Read the battery voltage and estimated level
