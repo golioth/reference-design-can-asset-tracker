@@ -233,10 +233,9 @@ void main(void)
 	slide_add(O_LAT, O_LABEL_LAT, strlen(O_LABEL_LAT));
 	slide_add(O_LON, O_LABEL_LON, strlen(O_LABEL_LON));
 	slide_add(O_VEHICLE_SPEED, O_LABEL_VEHICLE_SPEED, strlen(O_LABEL_VEHICLE_SPEED));
-#ifdef CONFIG_ALUDEL_BATTERY_MONITOR
-	slide_add(O_BATTERY_V, O_LABEL_BATTERY, strlen(O_LABEL_BATTERY));
-	slide_add(O_BATTERY_LVL, O_LABEL_BATTERY, strlen(O_LABEL_BATTERY));
-#endif
+	IF_ENABLED(CONFIG_ALUDEL_BATTERY_MONITOR,
+		   (slide_add(O_BATTERY_V, O_LABEL_BATTERY, strlen(O_LABEL_BATTERY));
+		    slide_add(O_BATTERY_LVL, O_LABEL_BATTERY, strlen(O_LABEL_BATTERY));));
 	slide_add(O_FIRMWARE, O_LABEL_FIRMWARE, strlen(O_LABEL_FIRMWARE));
 
 	/* Set the title ofthe Ostentus summary slide (optional) */
