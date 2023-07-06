@@ -203,7 +203,7 @@ void process_can_frames_thread(void *arg1, void *arg2, void *arg3)
 
 		/* Update Ostentus slide values */
 		snprintk(vehicle_speed_str, sizeof(vehicle_speed_str), "%d km/h", vehicle_speed);
-		slide_set(O_VEHICLE_SPEED, vehicle_speed_str, strlen(vehicle_speed_str));
+		slide_set(VEHICLE_SPEED, vehicle_speed_str, strlen(vehicle_speed_str));
 
 		k_sleep(K_SECONDS(get_vehicle_speed_delay_s()));
 	}
@@ -256,16 +256,16 @@ void process_rmc_frames_thread(void *arg1, void *arg2, void *arg3)
 		/* Update Ostentus slide values */
 		snprintk(lat_str, sizeof(lat_str), "%f", minmea_tocoord(&rmc_frame.latitude));
 		snprintk(lon_str, sizeof(lon_str), "%f", minmea_tocoord(&rmc_frame.longitude));
-		slide_set(O_LAT, lat_str, strlen(lat_str));
-		slide_set(O_LON, lon_str, strlen(lon_str));
+		slide_set(LATITUDE, lat_str, strlen(lat_str));
+		slide_set(LONGITUDE, lon_str, strlen(lon_str));
 
 		IF_ENABLED(CONFIG_ALUDEL_BATTERY_MONITOR,
 			   (snprintk(batt_v_str, sizeof(batt_v_str), "%.2f V",
 				     sensor_value_to_double(&cat_frame.batt_v));
 			    snprintk(batt_lvl_str, sizeof(batt_lvl_str), "%d%%",
 				     cat_frame.batt_lvl.val1);
-			    slide_set(O_BATTERY_V, batt_v_str, strlen(batt_v_str));
-			    slide_set(O_BATTERY_LVL, batt_lvl_str, strlen(batt_lvl_str));));
+			    slide_set(BATTERY_V, batt_v_str, strlen(batt_v_str));
+			    slide_set(BATTERY_LVL, batt_lvl_str, strlen(batt_lvl_str));));
 	}
 }
 
