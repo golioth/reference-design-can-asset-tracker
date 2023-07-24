@@ -8,8 +8,6 @@
 #ifndef APPLICATION_BATTERY_H_
 #define APPLICATION_BATTERY_H_
 
-#include <zephyr/drivers/sensor.h>
-
 /** Enable or disable measurement of the battery voltage.
  *
  * @param enable true to enable, false to disable
@@ -52,22 +50,67 @@ struct battery_level_point {
  */
 unsigned int battery_level_pptt(unsigned int batt_mV, const struct battery_level_point *curve);
 
-/**
- * @brief Read the battery voltage and estimated level
+/** A battery voltage and level measurement.
  *
- * @param batt_v measured battery voltage
- *
- * @param batt_lvl remaining battery level
- *
- * @return Error number or zero if successful
+ * Battery voltage is in mV.
+ * Battery level is in parts per ten thousand.
  */
-int read_battery_info(struct sensor_value *batt_v, struct sensor_value *batt_lvl);
+struct battery_data {
+	int battery_voltage_mv;
+	unsigned int battery_level_pptt;
+};
 
 /**
- * @brief Log the battery voltage and estimated level
+ * @brief Get pointer to a string representation of the last read battery
+ * voltage.
+ *
+ * This string is generated each time read_and_report_battery() is called.
+ *
+ * @return Pointer to character array
+ */
+char *get_batt_v_str(void);
+
+/**
+ * @brief Get pointer to a string representation of the last read percentage
+ * level. If a level has not yet been read, this value will be `none`.
+ *
+ * This string is generated each time read_and_report_battery() is called.
+ *
+ * @return Pointer to character array
+ */
+char *get_batt_lvl_str(void);
+
+/**
+ * @brief Read the battery voltage and estimated level.
+ *
+ * @param battery_data pointer to a struct to read the battery data into.
+ *
+ * @return Error number or zero if successful.
+ */
+int read_battery_data(struct battery_data *batt_data);
+
+/**
+ * @brief Log the battery voltage and estimated level.
+ *
+ * @param battery_data battery data to log.
+ *
+ */
+void log_battery_data(void);
+
+/**
+ * @brief Stream battery data to Golioth.
+ *
+ * @param battery_data battery data to stream to Golioth.
  *
  * @return Error number or zero if successful
  */
-int log_battery_info(void);
+int stream_battery_data(struct battery_data *batt_data);
+
+/**
+ * @brief Read, log, stream, and display a battery measurement.
+ *
+ * @return Error number or zero if successful
+ */
+int read_and_report_battery(void);
 
 #endif /* APPLICATION_BATTERY_H_ */

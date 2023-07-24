@@ -47,8 +47,6 @@ static const struct gpio_dt_spec gnss7_sel = GPIO_DT_SPEC_GET(UART_SEL, gpios);
 static const struct device *const can_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_canbus));
 
 struct can_asset_tracker_data {
-	struct sensor_value batt_v;
-	struct sensor_value batt_lvl;
 	struct minmea_sentence_rmc rmc_frame;
 	int vehicle_speed;
 };
@@ -219,26 +217,9 @@ void process_rmc_frames_thread(void *arg1, void *arg2, void *arg3)
 	struct can_asset_tracker_data cat_frame;
 	char lat_str[12];
 	char lon_str[12];
-	IF_ENABLED(CONFIG_ALUDEL_BATTERY_MONITOR,
-		   (struct sensor_value batt_v; struct sensor_value batt_lvl; char batt_v_str[7];
-		    char batt_lvl_str[5];));
 
 	while (k_msgq_get(&rmc_msgq, &rmc_frame, K_FOREVER) == 0) {
 		cat_frame.rmc_frame = rmc_frame;
-
-		/* Log battery levels if possible */
-		cat_frame.batt_v.val1 = 0;
-		cat_frame.batt_v.val2 = 0;
-		cat_frame.batt_lvl.val1 = 0;
-		cat_frame.batt_lvl.val2 = 0;
-		IF_ENABLED(CONFIG_ALUDEL_BATTERY_MONITOR,
-			   (read_battery_info(&batt_v, &batt_lvl);
-			    cat_frame.batt_v.val1 = batt_v.val1;
-			    cat_frame.batt_v.val2 = batt_v.val2;
-			    cat_frame.batt_lvl.val1 = batt_lvl.val1;
-			    cat_frame.batt_lvl.val2 = batt_lvl.val2;
-			    LOG_INF("Battery measurement: voltage=%.2f V, level=%d%%",
-				    sensor_value_to_double(&batt_v), batt_lvl.val1);));
 
 		/* Use the latest vehicle speed reading received from the ECU */
 		k_mutex_lock(&shared_data_mutex, K_FOREVER);
@@ -258,14 +239,6 @@ void process_rmc_frames_thread(void *arg1, void *arg2, void *arg3)
 		snprintk(lon_str, sizeof(lon_str), "%f", minmea_tocoord(&rmc_frame.longitude));
 		slide_set(LATITUDE, lat_str, strlen(lat_str));
 		slide_set(LONGITUDE, lon_str, strlen(lon_str));
-
-		IF_ENABLED(CONFIG_ALUDEL_BATTERY_MONITOR,
-			   (snprintk(batt_v_str, sizeof(batt_v_str), "%.2f V",
-				     sensor_value_to_double(&cat_frame.batt_v));
-			    snprintk(batt_lvl_str, sizeof(batt_lvl_str), "%d%%",
-				     cat_frame.batt_lvl.val1);
-			    slide_set(BATTERY_V, batt_v_str, strlen(batt_v_str));
-			    slide_set(BATTERY_LVL, batt_lvl_str, strlen(batt_lvl_str));));
 	}
 }
 
@@ -360,6 +333,11 @@ void app_work_sensor_read(void)
 	char lat_str[12];
 	char lon_str[12];
 
+	IF_ENABLED(CONFIG_ALUDEL_BATTERY_MONITOR,
+		   (read_and_report_battery();
+		    slide_set(BATTERY_V, get_batt_v_str(), strlen(get_batt_v_str()));
+		    slide_set(BATTERY_LVL, get_batt_lvl_str(), strlen(get_batt_lvl_str()));));
+
 	while (k_msgq_get(&cat_msgq, &cached_data, K_NO_WAIT) == 0) {
 		snprintk(lat_str, sizeof(lat_str), "%f",
 			 minmea_tocoord(&cached_data.rmc_frame.latitude));
@@ -377,10 +355,9 @@ void app_work_sensor_read(void)
 		 * `time` timestamp of the data.
 		 */
 		snprintk(json_buf, sizeof(json_buf),
-			 "{\"time\":\"%s\",\"batt_v\":%.2f,\"batt_lvl\":%d,\"gps\":{\"lat\":%s,"
-			 "\"lon\":%s},\"vehicle\":{\"speed\":%d}}",
-			 ts_str, sensor_value_to_double(&cached_data.batt_v),
-			 cached_data.batt_lvl.val1, lat_str, lon_str, cached_data.vehicle_speed);
+			 "{\"time\":\"%s\",\"gps\":{\"lat\":%s,\"lon\":%s},"
+			 "\"vehicle\":{\"speed\":%d}}",
+			 ts_str, lat_str, lon_str, cached_data.vehicle_speed);
 		LOG_DBG("%s", json_buf);
 
 		err = golioth_stream_push(client, "tracker", GOLIOTH_CONTENT_FORMAT_APP_JSON,

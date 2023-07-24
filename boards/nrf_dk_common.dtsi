@@ -12,7 +12,6 @@
 	aliases {
 		click-uart = &arduino_serial;
 		click-i2c = &arduino_i2c;
-		golioth-led = &led2;
 		gnss7-sel = &gnss7_sel;
 	};
 

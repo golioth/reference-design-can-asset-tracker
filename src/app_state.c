@@ -64,7 +64,7 @@ void app_state_init(struct golioth_client *state_client)
 	k_sem_give(&update_actual);
 }
 
-void app_state_update_actual(void)
+int app_state_update_actual(void)
 {
 
 	/**
@@ -89,10 +89,14 @@ void app_state_update_actual(void)
 	if (err) {
 		LOG_ERR("Unable to write to LightDB State: %d", err);
 	}
+	return err;
 }
 
 int app_state_desired_handler(struct golioth_req_rsp *rsp)
 {
+	int err = 0;
+	int ret;
+
 	char fake_latitude_str[12];
 	char fake_longitude_str[12];
 	struct app_state parsed_state;
@@ -109,12 +113,12 @@ int app_state_desired_handler(struct golioth_req_rsp *rsp)
 	parsed_state.fake_latitude = fake_latitude_str;
 	parsed_state.fake_longitude = fake_longitude_str;
 
-	int ret = json_obj_parse((char *)rsp->data, rsp->len, app_state_descr,
-				 ARRAY_SIZE(app_state_descr), &parsed_state);
+	ret = json_obj_parse((char *)rsp->data, rsp->len, app_state_descr,
+			     ARRAY_SIZE(app_state_descr), &parsed_state);
 
 	if (ret < 0) {
 		LOG_ERR("Error parsing desired values: %d", ret);
-		return 0;
+		return ret;
 	}
 
 	uint8_t state_change_count = 0;
@@ -157,13 +161,13 @@ int app_state_desired_handler(struct golioth_req_rsp *rsp)
 
 	if (state_change_count) {
 		/* The state was changed, so update the state on the Golioth servers */
-		app_state_update_actual();
+		err = app_state_update_actual();
 	}
 
-	return 0;
+	return err;
 }
 
-void app_state_observe(void)
+int app_state_observe(void)
 {
 	int err = golioth_lightdb_observe_cb(client, APP_STATE_DESIRED_ENDP,
 					     GOLIOTH_CONTENT_FORMAT_APP_JSON,
@@ -172,11 +176,13 @@ void app_state_observe(void)
 		LOG_WRN("failed to observe lightdb path: %d", err);
 	}
 
-	/* This will only run when we first connect. It updates the actual state of
-	 * the device with the Golioth servers. Future updates will be sent whenever
+	/* This will only run once. It updates the actual state of the device
+	 * with the Golioth servers. Future updates will be sent whenever
 	 * changes occur.
 	 */
 	if (k_sem_take(&update_actual, K_NO_WAIT) == 0) {
-		app_state_update_actual();
+		err = app_state_update_actual();
 	}
+
+	return err;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Golioth, Inc.
+ * Copyright (c) 2022-2023 Golioth, Inc.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -8,25 +8,29 @@
 LOG_MODULE_REGISTER(golioth_can_asset_tracker, LOG_LEVEL_DBG);
 
 #include <modem/lte_lc.h>
-#ifdef CONFIG_MODEM_INFO
-#include <modem/modem_info.h>
-#endif
 #include <net/golioth/system_client.h>
 #include <samples/common/net_connect.h>
 #include <zephyr/net/coap.h>
-#include <zephyr/drivers/gpio.h>
-
 #include "app_rpc.h"
 #include "app_settings.h"
 #include "app_state.h"
 #include "app_work.h"
 #include "dfu/app_dfu.h"
 #include "libostentus/libostentus.h"
+#ifdef CONFIG_ALUDEL_BATTERY_MONITOR
+#include "battery_monitor/battery.h"
+#endif
+
+#include <zephyr/drivers/gpio.h>
+
+#ifdef CONFIG_MODEM_INFO
+#include <modem/modem_info.h>
+#endif
 
 static struct golioth_client *client = GOLIOTH_SYSTEM_CLIENT_GET();
 
 K_SEM_DEFINE(connected, 0, 1);
-K_SEM_DEFINE(dfu_status_update, 0, 1);
+K_SEM_DEFINE(dfu_status_unreported, 1, 1);
 
 static k_tid_t _system_thread = 0;
 
@@ -46,6 +50,7 @@ void wake_system_thread(void)
 static void golioth_on_connect(struct golioth_client *client)
 {
 	k_sem_give(&connected);
+	golioth_connection_led_set(1);
 
 	LOG_INF("Registering observations with Golioth");
 	app_dfu_observe();
@@ -53,20 +58,9 @@ static void golioth_on_connect(struct golioth_client *client)
 	app_rpc_observe();
 	app_state_observe();
 
-	static bool initial_connection = true;
-	if (initial_connection) {
-		initial_connection = false;
-
-		/*
-		 * Report current DFU version to Golioth
-		 * FIXME: we can't call this here because it's sync (deadlock)
-		 * app_dfu_report_state_to_golioth();
-		 * This semaphore is a workaround
-		 */
-		k_sem_give(&dfu_status_update);
-
-		/* Indicate connection using LEDs */
-		golioth_connection_led_set(1);
+	if (k_sem_take(&dfu_status_unreported, K_NO_WAIT) == 0) {
+		/* Report firmware update status on first connect after power up */
+		app_dfu_report_state_to_golioth();
 	}
 }
 
@@ -102,9 +96,30 @@ static void lte_handler(const struct lte_lc_evt *const evt)
 	}
 }
 
+#ifdef CONFIG_MODEM_INFO
+static void log_modem_firmware_version(void)
+{
+	char sbuf[128];
+
+	/* Initialize modem info */
+	int err = modem_info_init();
+
+	if (err) {
+		LOG_ERR("Failed to initialize modem info: %d", err);
+	}
+
+	/* Log modem firmware version */
+	modem_info_string_get(MODEM_INFO_FW_VERSION, sbuf, sizeof(sbuf));
+	LOG_INF("Modem firmware version: %s", sbuf);
+}
+#endif
+
 void button_pressed(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
 	LOG_DBG("Button pressed at %d", k_cycle_get_32());
+	/* This function is an Interrupt Service Routine. Do not call functions that
+	 * use other threads, or perform long-running operations here
+	 */
 	k_wakeup(_system_thread);
 }
 
@@ -130,34 +145,19 @@ void main(void)
 {
 	int err;
 
-	/* Get system thread id so loop delay change event can wake main */
-	_system_thread = k_current_get();
-
 	LOG_INF("Started CAN Asset Tracker app");
 
-#ifdef CONFIG_MODEM_INFO
-	char sbuf[128];
-
-	/* Initialize modem info */
-	err = modem_info_init();
-	if (err) {
-		LOG_ERR("Failed to initialize modem info: %d", err);
-	}
-
-	/* Log modem firmware version */
-	modem_info_string_get(MODEM_INFO_FW_VERSION, sbuf, sizeof(sbuf));
-	LOG_INF("Modem firmware version: %s", sbuf);
-#endif
-
-	/* Print app firmware version */
-	LOG_INF("App firmware version: %s", CONFIG_MCUBOOT_IMAGE_VERSION);
+	LOG_INF("Firmware version: %s", CONFIG_MCUBOOT_IMAGE_VERSION);
+	IF_ENABLED(CONFIG_MODEM_INFO, (log_modem_firmware_version();));
 
 	/* Update Ostentus LEDS using bitmask (Power On and Battery)*/
 	led_bitmask(LED_POW | LED_BAT);
 
 	/* Show Golioth Logo on Ostentus ePaper screen */
 	show_splash();
-	k_sleep(K_SECONDS(4));
+
+	/* Get system thread id so loop delay change event can wake main */
+	_system_thread = k_current_get();
 
 	/* Initialize Golioth logo LED */
 	err = gpio_pin_configure_dt(&golioth_led, GPIO_OUTPUT_INACTIVE);
@@ -248,10 +248,6 @@ void main(void)
 	slideshow(30000);
 
 	while (true) {
-		if (k_sem_take(&dfu_status_update, K_NO_WAIT) == 0) {
-			app_dfu_report_state_to_golioth();
-		}
-
 		app_work_sensor_read();
 
 		k_sleep(K_SECONDS(get_loop_delay_s()));

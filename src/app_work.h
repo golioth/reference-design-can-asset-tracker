@@ -7,14 +7,22 @@
 #ifndef __APP_WORK_H__
 #define __APP_WORK_H__
 
+/** The `app_work.c` file performs the important work of this application which
+ * is to read sensor values and report them to the Golioth LightDB Stream as
+ * time-series data.
+ *
+ * https://docs.golioth.io/firmware/zephyr-device-sdk/light-db-stream/
+ */
+
+void app_work_init(struct golioth_client *work_client);
+void app_work_sensor_read(void);
+
 #define LABEL_LATITUDE	    "Latitude"
 #define LABEL_LONGITUDE	    "Longitude"
 #define LABEL_VEHICLE_SPEED "Speed"
-#ifdef CONFIG_ALUDEL_BATTERY_MONITOR
-#define LABEL_BATTERY "Battery"
-#endif
-#define LABEL_FIRMWARE "Firmware"
-#define SUMMARY_TITLE  "Asset Tracker"
+#define LABEL_BATTERY	    "Battery"
+#define LABEL_FIRMWARE	    "Firmware"
+#define SUMMARY_TITLE	    "Asset Tracker"
 
 /**
  * Each Ostentus slide needs a unique key. You may add additional slides by
@@ -30,8 +38,5 @@ typedef enum {
 #endif
 	FIRMWARE
 } slide_key;
-
-void app_work_init(struct golioth_client *work_client);
-void app_work_sensor_read(void);
 
 #endif /* __APP_WORK_H__ */

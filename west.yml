@@ -2,12 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 manifest:
-  version: 0.7
+  version: 0.8
 
   projects:
     - name: golioth
       path: modules/lib/golioth
-      revision: v0.6.0
+      revision: f01824d8f0943463ee07cb493103a63221599c79
       url: https://github.com/golioth/golioth-zephyr-sdk
       west-commands: scripts/west-commands.yml
       import:
@@ -31,7 +31,7 @@ manifest:
 
     - name: golioth-zephyr-boards
       path: app/golioth-boards
-      revision: 16dd0ef2d13a8e95ba923ee014424f5a3f1009cf
+      revision: 0a0a27dc2facc4245be0d15b9b36ce526cbf9262
       url: git@github.com:golioth/golioth-zephyr-boards.git
 
     - name: libostentus
@@ -39,9 +39,15 @@ manifest:
       revision: 5d37e4160959881932d1dd869e1d238096878cf2
       url: git@github.com:golioth/libostentus.git
 
+    - name: zephyr-network-info
+      path: app/src/network_info
+      revision: eda40fe3fa186fa47888f8b461acbf444cf6c7e6
+      url: https://github.com/golioth/zephyr-network-info
+
     - name: minmea
       path: app/src/lib/minmea
       revision: 85439b97dd4984c5efb84ce954b85088e781dae8
       url: https://github.com/kosma/minmea.git
+
   self:
     path: app
