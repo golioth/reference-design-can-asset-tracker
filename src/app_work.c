@@ -70,6 +70,11 @@ K_THREAD_STACK_DEFINE(process_rmc_frames_thread_stack, PROCESS_RMC_FRAMES_THREAD
 K_MUTEX_DEFINE(shared_data_mutex);
 static int g_vehicle_speed;
 
+/* Formatting strings for sending sensor JSON to Golioth */
+#define JSON_FMT                                                                                   \
+	"{\"time\":\"%s\",\"gps\":{\"lat\":%s,\"lon\":%s,\"fake\":%s},\"vehicle\":{\"speed\":%d}}"
+#define JSON_FMT_FAKE_GPS "{\"gps\":{\"lat\":%s,\"lon\":%s,\"fake\":%s},\"vehicle\":{\"speed\":%d}}"
+
 /**
  * Convert a floating point coordinate value to a minmea_float coordinate.
  *
@@ -270,7 +275,6 @@ static void process_reading(char *raw_nmea)
 								get_fake_latitude());
 						coord_to_minmea(&rmc_frame.longitude,
 								get_fake_longitude());
-						rmc_frame.valid = true;
 						k_msgq_put(&rmc_msgq, &rmc_frame, K_NO_WAIT);
 
 						/*
@@ -348,15 +352,19 @@ void app_work_sensor_read(void)
 			 cached_data.rmc_frame.time.minutes, cached_data.rmc_frame.time.seconds,
 			 cached_data.rmc_frame.time.microseconds);
 
-		/*
-		 * `time` will not appear in the `data` payload once received
-		 * by Golioth LightDB Stream, but instead will override the
-		 * `time` timestamp of the data.
-		 */
-		snprintk(json_buf, sizeof(json_buf),
-			 "{\"time\":\"%s\",\"gps\":{\"lat\":%s,\"lon\":%s},"
-			 "\"vehicle\":{\"speed\":%d}}",
-			 ts_str, lat_str, lon_str, cached_data.vehicle_speed);
+		if (cached_data.rmc_frame.valid == true) {
+			/*
+			 * `time` will not appear in the `data` payload once received
+			 * by Golioth LightDB Stream, but instead will override the
+			 * `time` timestamp of the data.
+			 */
+			snprintk(json_buf, sizeof(json_buf), JSON_FMT, ts_str, lat_str, lon_str,
+				 "false", cached_data.vehicle_speed);
+		} else { /* Fake GPS data does not have a `time` field */
+			snprintk(json_buf, sizeof(json_buf), JSON_FMT_FAKE_GPS, lat_str, lon_str,
+				 "true", cached_data.vehicle_speed);
+		}
+
 		LOG_DBG("%s", json_buf);
 
 		err = golioth_stream_push(client, "tracker", GOLIOTH_CONTENT_FORMAT_APP_JSON,
