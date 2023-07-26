@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 sample:
-  description: CAN Asset Tracker Reference Design
+  description: Golioth Reference Design - CAN Asset Tracker
   name: can_asset_tracker
 common:
   harness: net
