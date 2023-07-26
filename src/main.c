@@ -238,7 +238,7 @@ void main(void)
 		    slide_add(BATTERY_LVL, LABEL_BATTERY, strlen(LABEL_BATTERY));));
 	slide_add(FIRMWARE, LABEL_FIRMWARE, strlen(LABEL_FIRMWARE));
 
-	/* Set the title ofthe Ostentus summary slide (optional) */
+	/* Set the title of the Ostentus summary slide (optional) */
 	summary_title(SUMMARY_TITLE, strlen(SUMMARY_TITLE));
 
 	/* Update the Firmware slide with the firmware version */
