@@ -15,7 +15,6 @@ LOG_MODULE_REGISTER(app_work, LOG_LEVEL_DBG);
 #include <zephyr/drivers/uart.h>
 #include <zephyr/drivers/can.h>
 #include <zephyr/sys/byteorder.h>
-#include <zephyr/drivers/sensor.h>
 
 #include "app_work.h"
 #include "app_settings.h"
