@@ -9,13 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
+### Fixed
 
-- Add `gps.fake` field in JSON data (`true` if GPS location is fake, `false` if GPS location is real).
+- An incorrect `time` value is no longer reported when fake GPS is enabled.
 
-### Removed
+### Changed
 
-- Remove `time` field from JSON data for fake GPS readings.
+- Fake GPS is now configured using the Golioth Settings service (it previously used the LightDB State service).
+- Reverted back to LightDB State examples.
 
 ## [1.5.0] - 2023-07-26
 
