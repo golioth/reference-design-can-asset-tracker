@@ -239,8 +239,7 @@ void process_rmc_frames_thread(void *arg1, void *arg2, void *arg3)
 			LOG_ERR("Unable to add cat_frame to cat_msgq: %d", err);
 		}
 
-		LOG_INF("GPS Position%s: latitude=%f, longitude=%f",
-			cat_frame.rmc_frame.valid ? "" : " (fake)",
+		LOG_INF("GPS Position%s: %f, %f", cat_frame.rmc_frame.valid ? "" : " (fake)",
 			minmea_tocoord(&rmc_frame.latitude), minmea_tocoord(&rmc_frame.longitude));
 
 		/* Update Ostentus slide values */
