@@ -144,6 +144,7 @@ Stream service:
 
 * ``gps/lat``: Latitude (°)
 * ``gps/lon``: Longitude (°)
+* ``gps/fake``: ``true`` if GPS location data is fake, otherwise ``false``
 * ``vehicle/speed``: Vehicle Speed (km/h)
 
 Battery voltage and level readings are periodically sent to the following
