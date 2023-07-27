@@ -65,9 +65,10 @@ static k_tid_t process_rmc_frames_tid;
 struct k_thread process_rmc_frames_thread_data;
 K_THREAD_STACK_DEFINE(process_rmc_frames_thread_stack, PROCESS_RMC_FRAMES_THREAD_STACK_SIZE);
 
-/* Global variables shared between threads */
+/* Global state shared between threads */
+#define SHARED_DATA_MUTEX_TIMEOUT 1000
 K_MUTEX_DEFINE(shared_data_mutex);
-static int g_vehicle_speed;
+static int g_vehicle_speed = -1;
 
 /* Formatting strings for sending sensor JSON to Golioth */
 #define JSON_FMT                                                                                   \
@@ -163,12 +164,6 @@ void process_can_frames_thread(void *arg1, void *arg2, void *arg3)
 	}
 	LOG_DBG("CAN bus receive filter id: %d", can_filter_id);
 
-	/* Initialize shared global variables */
-	k_mutex_lock(&shared_data_mutex, K_FOREVER);
-	/* -1 indicates a valid OBD2 response has not been received from the ECU */
-	g_vehicle_speed = -1;
-	k_mutex_unlock(&shared_data_mutex);
-
 	while (1) {
 		vehicle_speed = -1;
 
@@ -194,8 +189,14 @@ void process_can_frames_thread(void *arg1, void *arg2, void *arg3)
 			}
 		}
 
-		/* Update shared global variables */
-		k_mutex_lock(&shared_data_mutex, K_FOREVER);
+		/* Update shared global state */
+		err = k_mutex_lock(&shared_data_mutex, K_MSEC(SHARED_DATA_MUTEX_TIMEOUT));
+		if (err) {
+			LOG_ERR("Error locking shared data mutex (lock count: %u): %d", err,
+				shared_data_mutex.lock_count);
+			k_sleep(K_SECONDS(get_vehicle_speed_delay_s()));
+			continue;
+		}
 		g_vehicle_speed = vehicle_speed;
 		k_mutex_unlock(&shared_data_mutex);
 
@@ -225,7 +226,11 @@ void process_rmc_frames_thread(void *arg1, void *arg2, void *arg3)
 		cat_frame.rmc_frame = rmc_frame;
 
 		/* Use the latest vehicle speed reading received from the ECU */
-		k_mutex_lock(&shared_data_mutex, K_FOREVER);
+		err = k_mutex_lock(&shared_data_mutex, K_MSEC(SHARED_DATA_MUTEX_TIMEOUT));
+		if (err) {
+			LOG_ERR("Error locking shared data mutex (lock count: %u): %d", err,
+				shared_data_mutex.lock_count);
+		}
 		cat_frame.vehicle_speed = g_vehicle_speed;
 		k_mutex_unlock(&shared_data_mutex);
 
