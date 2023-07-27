@@ -18,7 +18,6 @@ LOG_MODULE_REGISTER(app_work, LOG_LEVEL_DBG);
 
 #include "app_work.h"
 #include "app_settings.h"
-#include "app_state.h"
 #include "libostentus/libostentus.h"
 #include "lib/minmea/minmea.h"
 
@@ -235,8 +234,9 @@ void process_rmc_frames_thread(void *arg1, void *arg2, void *arg3)
 			LOG_ERR("Unable to add cat_frame to cat_msgq: %d", err);
 		}
 
-		LOG_INF("GPS: latitude=%f, longitude=%f", minmea_tocoord(&rmc_frame.latitude),
-			minmea_tocoord(&rmc_frame.longitude));
+		LOG_INF("GPS Position%s: latitude=%f, longitude=%f",
+			cat_frame.rmc_frame.valid ? "" : " (fake)",
+			minmea_tocoord(&rmc_frame.latitude), minmea_tocoord(&rmc_frame.longitude));
 
 		/* Update Ostentus slide values */
 		snprintk(lat_str, sizeof(lat_str), "%f", minmea_tocoord(&rmc_frame.latitude));
@@ -269,12 +269,12 @@ static void process_reading(char *raw_nmea)
 					 */
 					_last_gps = wait_for;
 				} else {
-					if (get_fake_gps_enabled() == true) {
+					if (get_fake_gps_enabled_s() == true) {
 						/* use fake GPS coordinates from LightDB state */
 						coord_to_minmea(&rmc_frame.latitude,
-								get_fake_latitude());
+								get_fake_gps_latitude_s());
 						coord_to_minmea(&rmc_frame.longitude,
-								get_fake_longitude());
+								get_fake_gps_longitude_s());
 						k_msgq_put(&rmc_msgq, &rmc_frame, K_NO_WAIT);
 
 						/*

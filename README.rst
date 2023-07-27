@@ -18,7 +18,7 @@ Specifically, the following OBD-II vehicle sensor "PIDs" are supported:
 
 The vehicle sensor values are combined with GPS location/time data and uploaded
 to the Golioth Cloud. The timestamp from the GPS reading is used as the
-timestamp for data record in the Golioth LightDB Stream database.
+timestamp for the data record in the Golioth LightDB Stream database.
 
 GPS readings can be received as frequently as once-per-second. When the device
 is out of cellular range, the reference design firmware caches data locally and
@@ -33,7 +33,7 @@ set up your local workspace.
 Install the Python virtual environment (recommended)
 ====================================================
 
-.. code-block:: console
+.. code-block:: shell
 
    cd ~
    mkdir golioth-reference-design-can-asset-tracker
@@ -44,7 +44,7 @@ Install the Python virtual environment (recommended)
 Use ``west`` to initialize and install
 ======================================
 
-.. code-block:: console
+.. code-block:: shell
 
    cd ~/golioth-reference-design-can-aset-tracker
    west init -m git@github.com:golioth/reference-design-can-asset-tracker.git .
@@ -58,7 +58,7 @@ Building the application
 Build Zephyr sample application for Golioth Aludel-Mini
 (``aludel_mini_v1_sparkfun9160_ns``) from the top level of your project. After a
 successful build you will see a new ``build`` directory. Note that any changes
-(and git commmits) to the project itself will be inside the ``app`` folder. The
+(and git commits) to the project itself will be inside the ``app`` folder. The
 ``build`` and ``deps`` directories being one level higher prevents the repo from
 cataloging all of the changes to the dependencies and the build (so no
 ``.gitignore`` is needed)
@@ -66,7 +66,7 @@ cataloging all of the changes to the dependencies and the build (so no
 During building, replace ``<your.semantic.version>`` to utilize the DFU
 functionality on this Reference Design.
 
-.. code-block:: console
+.. code-block:: text
 
    $ (.venv) west build -p -b aludel_mini_v1_sparkfun9160_ns app -- -DCONFIG_MCUBOOT_IMAGE_VERSION=\"<your.semantic.version>\"
    $ (.venv) west flash
@@ -74,7 +74,7 @@ functionality on this Reference Design.
 Configure PSK-ID and PSK using the device shell based on your Golioth
 credentials and reboot:
 
-.. code-block:: console
+.. code-block:: text
 
    uart:~$ settings set golioth/psk-id <my-psk-id@my-project>
    uart:~$ settings set golioth/psk <my-psk>
@@ -102,6 +102,24 @@ The following settings should be set in the Device Settings menu of the
    (seconds).
 
    Default value is ``3`` seconds.
+
+``FAKE_GPS_ENABLED``
+   Controls whether fake GPS position data is reported when a real GPS location
+   signal is unavailable. Set to a boolean value.
+
+   Default value is ``false``.
+
+``FAKE_GPS_LATITUDE``
+   Sets the fake latitude value to be used when fake GPS is enabled. Set to a
+   floating point value (``-90.0`` to ``90.0``).
+
+   Default value is ``37.789980``.
+
+``FAKE_GPS_LONGITUDE``
+   Sets the fake longitude value to be used when fake GPS is enabled. Set to a
+   floating point value (``-180.0`` to ``180.0``).
+
+   Default value is ``-122.400860``.
 
 ``VEHICLE_SPEED_DELAY_S``
    Adjusts the delay between vehicle speed readings. Set to an integer value
@@ -139,7 +157,7 @@ LightDB State and LightDB Stream data
 Time-Series Data (LightDB Stream)
 ---------------------------------
 
-Vehicle data is periodicaly sent to the following endpoints of the LightDB
+Vehicle data is periodically sent to the following endpoints of the LightDB
 Stream service:
 
 * ``gps/lat``: Latitude (°)
@@ -156,25 +174,18 @@ endpoints:
 Stateful Data (LightDB State)
 -----------------------------
 
-In the case where a GPS signal can not be received, a fake latitude & longitude
-can be set for the device in LightDB State. Setting the ``desired`` values in
-the Golioth Console will update the actual ``state`` values on the device.
+The concept of Digital Twin is demonstrated with the LightDB State
+``example_int0`` and ``example_int1`` variables that are members of the ``desired``
+and ``state`` endpoints.
 
-``fake_gps_enabled``
-   Set to a boolean value (``true`` or ``false``) to enable or disable the
-   fake GPS functionality.
+* ``desired`` values may be changed from the cloud side. The device will recognize
+  these, validate them for [0..65535] bounding, and then reset these endpoints
+  to ``-1``
 
-   Default value is ``false``.
-
-``fake_latitude``
-   Set to a string latitude value (``"-90.0"`` to ``"90.0"``).
-
-   Default value is ``"37.789980"``.
-
-``fake_longitude``
-   Set to a string longitude value (``"-180.0"`` to ``"180.0"``).
-
-   Default value is ``"-122.400860"``.
+* ``state`` values will be updated by the device whenever a valid value is
+  received from the ``desired`` endpoints. The cloud may read the ``state``
+  endpoints to determine device status, but only the device should ever write to
+  the ``state`` endpoints.
 
 Further Information in Header Files
 ===================================
@@ -199,7 +210,7 @@ The click boards must be in this order for the GPS UART to work.
 Use the following commands to build and program. (Use the same console commands
 from above to provision this board after programming the firmware.)
 
-.. code-block:: console
+.. code-block:: text
 
    $ (.venv) west build -p -b nrf9160dk_nrf9160_ns app -- -DCONFIG_MCUBOOT_IMAGE_VERSION=\"<your.semantic.version>\"
    $ (.venv) west flash
@@ -232,7 +243,7 @@ recommend the following workflow to pull in future changes:
   * Merge template release tag into your ``main`` (or other branch)
   * Resolve merge conflicts (if any) and commit to your repository
 
-.. code-block:: console
+.. code-block:: shell
 
    # Setup
    git remote add template https://github.com/golioth/reference-design-template.git
@@ -243,7 +254,7 @@ recommend the following workflow to pull in future changes:
    git checkout your_local_branch
    git merge template_v1.0.0
 
-   # Resolve merge conflicts if necessry
+   # Resolve merge conflicts if necessary
    git add resolved_files
    git commit
 
