@@ -18,9 +18,11 @@ LOG_MODULE_REGISTER(app_work, LOG_LEVEL_DBG);
 
 #include "app_work.h"
 #include "app_settings.h"
-#include "libostentus/libostentus.h"
 #include "lib/minmea/minmea.h"
 
+#ifdef CONFIG_LIB_OSTENTUS
+#include <libostentus.h>
+#endif
 #ifdef CONFIG_ALUDEL_BATTERY_MONITOR
 #include "battery_monitor/battery.h"
 #endif
@@ -204,8 +206,11 @@ void process_can_frames_thread(void *arg1, void *arg2, void *arg3)
 		LOG_INF("Vehicle Speed Sensor: %d km/h", vehicle_speed);
 
 		/* Update Ostentus slide values */
-		snprintk(vehicle_speed_str, sizeof(vehicle_speed_str), "%d km/h", vehicle_speed);
-		slide_set(VEHICLE_SPEED, vehicle_speed_str, strlen(vehicle_speed_str));
+		IF_ENABLED(CONFIG_LIB_OSTENTUS, (
+			snprintk(vehicle_speed_str, sizeof(vehicle_speed_str), "%d km/h",
+				 vehicle_speed);
+			slide_set(VEHICLE_SPEED, vehicle_speed_str, strlen(vehicle_speed_str));
+		));
 
 		k_sleep(K_SECONDS(get_vehicle_speed_delay_s()));
 	}
@@ -243,10 +248,14 @@ void process_rmc_frames_thread(void *arg1, void *arg2, void *arg3)
 			minmea_tocoord(&rmc_frame.latitude), minmea_tocoord(&rmc_frame.longitude));
 
 		/* Update Ostentus slide values */
-		snprintk(lat_str, sizeof(lat_str), "%f", minmea_tocoord(&rmc_frame.latitude));
-		snprintk(lon_str, sizeof(lon_str), "%f", minmea_tocoord(&rmc_frame.longitude));
-		slide_set(LATITUDE, lat_str, strlen(lat_str));
-		slide_set(LONGITUDE, lon_str, strlen(lon_str));
+		IF_ENABLED(CONFIG_LIB_OSTENTUS, (
+			snprintk(lat_str, sizeof(lat_str), "%f",
+				 minmea_tocoord(&rmc_frame.latitude));
+			snprintk(lon_str, sizeof(lon_str), "%f",
+				 minmea_tocoord(&rmc_frame.longitude));
+			slide_set(LATITUDE, lat_str, strlen(lat_str));
+			slide_set(LONGITUDE, lon_str, strlen(lon_str));
+		));
 	}
 }
 
@@ -340,10 +349,11 @@ void app_work_sensor_read(void)
 	char lat_str[12];
 	char lon_str[12];
 
-	IF_ENABLED(CONFIG_ALUDEL_BATTERY_MONITOR,
-		   (read_and_report_battery();
-		    slide_set(BATTERY_V, get_batt_v_str(), strlen(get_batt_v_str()));
-		    slide_set(BATTERY_LVL, get_batt_lvl_str(), strlen(get_batt_lvl_str()));));
+	IF_ENABLED(CONFIG_ALUDEL_BATTERY_MONITOR, (
+		read_and_report_battery();
+		slide_set(BATTERY_V, get_batt_v_str(), strlen(get_batt_v_str()));
+		slide_set(BATTERY_LVL, get_batt_lvl_str(), strlen(get_batt_lvl_str()));
+	));
 
 	while (k_msgq_get(&cat_msgq, &cached_data, K_NO_WAIT) == 0) {
 		snprintk(lat_str, sizeof(lat_str), "%f",
