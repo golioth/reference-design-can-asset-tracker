@@ -150,7 +150,6 @@ void process_can_frames_thread(void *arg1, void *arg2, void *arg3)
 			 0xCC, 0xCC, 0xCC, 0xCC}};
 	int vehicle_speed;
 	uint8_t data_len;
-	char vehicle_speed_str[9];
 
 	/* Automatically put frames matching can_filter into can_msgq */
 	can_filter_id = can_add_rx_filter_msgq(can_dev, &can_msgq, &can_filter);
@@ -207,6 +206,8 @@ void process_can_frames_thread(void *arg1, void *arg2, void *arg3)
 
 		/* Update Ostentus slide values */
 		IF_ENABLED(CONFIG_LIB_OSTENTUS, (
+			char vehicle_speed_str[9];
+
 			snprintk(vehicle_speed_str, sizeof(vehicle_speed_str), "%d km/h",
 				 vehicle_speed);
 			slide_set(VEHICLE_SPEED, vehicle_speed_str, strlen(vehicle_speed_str));
@@ -224,8 +225,6 @@ void process_rmc_frames_thread(void *arg1, void *arg2, void *arg3)
 	int err;
 	struct minmea_sentence_rmc rmc_frame;
 	struct can_asset_tracker_data cat_frame;
-	char lat_str[12];
-	char lon_str[12];
 
 	while (k_msgq_get(&rmc_msgq, &rmc_frame, K_FOREVER) == 0) {
 		cat_frame.rmc_frame = rmc_frame;
@@ -249,6 +248,9 @@ void process_rmc_frames_thread(void *arg1, void *arg2, void *arg3)
 
 		/* Update Ostentus slide values */
 		IF_ENABLED(CONFIG_LIB_OSTENTUS, (
+			char lat_str[12];
+			char lon_str[12];
+
 			snprintk(lat_str, sizeof(lat_str), "%f",
 				 minmea_tocoord(&rmc_frame.latitude));
 			snprintk(lon_str, sizeof(lon_str), "%f",
