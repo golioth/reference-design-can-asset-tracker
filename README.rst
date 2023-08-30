@@ -187,12 +187,6 @@ and ``state`` endpoints.
   endpoints to determine device status, but only the device should ever write to
   the ``state`` endpoints.
 
-Further Information in Header Files
-===================================
-
-Please refer to the comments in each header file for a service-by-service
-explanation of this template.
-
 Hardware Variations
 *******************
 
