@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.7.0] - TBD
 
+### Fixed
+
+- Clear Ostentus memory when app starts
+
 ### Changed
 
 - Merge changes from [`golioth/reference-design-template@template_v1.1.0`](https://github.com/golioth/reference-design-template/tree/template_v1.1.0)
