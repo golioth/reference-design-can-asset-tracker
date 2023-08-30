@@ -381,8 +381,6 @@ void app_work_sensor_read(void)
 				 "true", cached_data.vehicle_speed);
 		}
 
-		LOG_DBG("%s", json_buf);
-
 		err = golioth_stream_push(client, "tracker", GOLIOTH_CONTENT_FORMAT_APP_JSON,
 					  json_buf, strlen(json_buf));
 		if (err)
