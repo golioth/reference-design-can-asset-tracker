@@ -180,7 +180,7 @@ static bool battery_ok;
 
 static int battery_setup(void)
 {
-	LOG_INF("Initializing battery measurement");
+	LOG_DBG("Initializing battery measurement");
 
 	int rc = divider_setup();
 
@@ -307,7 +307,7 @@ char *get_batt_lvl_str(void)
 
 void log_battery_data(void)
 {
-	LOG_INF("Battery measurement: voltage=%s, level=%s", get_batt_v_str(), get_batt_lvl_str());
+	LOG_DBG("Battery measurement: voltage=%s, level=%s", get_batt_v_str(), get_batt_lvl_str());
 }
 
 int stream_battery_data(struct battery_data *batt_data)
@@ -320,7 +320,6 @@ int stream_battery_data(struct battery_data *batt_data)
 	snprintk(json_buf, sizeof(json_buf), JSON_FMT, batt_data->battery_voltage_mv / 1000,
 		 batt_data->battery_voltage_mv % 1000, batt_data->battery_level_pptt / 100,
 		 batt_data->battery_level_pptt % 100);
-	LOG_DBG("%s", json_buf);
 
 	err = golioth_stream_push(client, stream_endpoint, GOLIOTH_CONTENT_FORMAT_APP_JSON,
 				  json_buf, strlen(json_buf));

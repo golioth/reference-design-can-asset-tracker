@@ -202,7 +202,7 @@ void process_can_frames_thread(void *arg1, void *arg2, void *arg3)
 		k_mutex_unlock(&shared_data_mutex);
 
 		/* Log vehicle speed */
-		LOG_INF("Vehicle Speed Sensor: %d km/h", vehicle_speed);
+		LOG_DBG("Vehicle Speed Sensor: %d km/h", vehicle_speed);
 
 		/* Update Ostentus slide values */
 		IF_ENABLED(CONFIG_LIB_OSTENTUS, (
@@ -243,7 +243,7 @@ void process_rmc_frames_thread(void *arg1, void *arg2, void *arg3)
 			LOG_ERR("Unable to add cat_frame to cat_msgq: %d", err);
 		}
 
-		LOG_INF("GPS Position%s: %f, %f", cat_frame.rmc_frame.valid ? "" : " (fake)",
+		LOG_DBG("GPS Position%s: %f, %f", cat_frame.rmc_frame.valid ? "" : " (fake)",
 			minmea_tocoord(&rmc_frame.latitude), minmea_tocoord(&rmc_frame.longitude));
 
 		/* Update Ostentus slide values */
@@ -396,7 +396,7 @@ void app_work_init(struct golioth_client *work_client)
 
 	client = work_client;
 
-	LOG_INF("Initializing GNSS receiver");
+	LOG_DBG("Initializing GNSS receiver");
 
 	err = gpio_pin_configure_dt(&gnss7_sel, GPIO_OUTPUT_ACTIVE);
 	if (err < 0) {
@@ -411,7 +411,7 @@ void app_work_init(struct golioth_client *work_client)
 	uart_irq_callback_user_data_set(uart_dev, serial_cb, NULL);
 	uart_irq_rx_enable(uart_dev);
 
-	LOG_INF("Initializing CAN controller");
+	LOG_DBG("Initializing CAN controller");
 
 	if (!device_is_ready(can_dev)) {
 		LOG_ERR("CAN device %s not ready", can_dev->name);
