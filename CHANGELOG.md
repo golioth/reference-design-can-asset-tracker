@@ -12,10 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Merge changes from [`golioth/reference-design-template@template_v1.1.0`](https://github.com/golioth/reference-design-template/tree/template_v1.1.0)
+- Change sensor readings logging level from `LOG_INF` to `LOG_DBG`
 
 ### Removed
 
 - Remove `clang-format` from pre-commit hooks
+- Remove logging of JSON data sent to Golioth
 
 ## [1.6.0] - 2023-07-31
 
