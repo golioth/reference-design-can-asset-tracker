@@ -9,13 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
-
-- Clear Ostentus memory when app starts
+## [1.7.0] - ADD DATE HERE
 
 ### Changed
 
-- Merge changes from [`golioth/reference-design-template@template_v1.1.0`](https://github.com/golioth/reference-design-template/tree/template_v1.1.0)
+- Merge changes from [`golioth/reference-design-template@468d213`](https://github.com/golioth/reference-design-template/commit/468d213735806dea5628f36666d66f2df7d29b73)
 - Change sensor readings logging level from `LOG_INF` to `LOG_DBG`
 - Upgrade `golioth/golioth-zephyr-boards` dependency to [`v1.0.1`](https://github.com/golioth/golioth-zephyr-boards/tree/v1.0.1)
 
