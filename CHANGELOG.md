@@ -2,6 +2,7 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
 # Changelog
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
@@ -13,9 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Merge changes from [`golioth/reference-design-template@468d213`](https://github.com/golioth/reference-design-template/commit/468d213735806dea5628f36666d66f2df7d29b73)
+- Merge changes from [`golioth/reference-design-template@f1d2422`](https://github.com/golioth/reference-design-template/commit/f1d2422ba04e13ebf66b36529abdbb781896e479)
 - Change sensor readings logging level from `LOG_INF` to `LOG_DBG`
-- Upgrade `golioth/golioth-zephyr-boards` dependency to [`v1.0.1`](https://github.com/golioth/golioth-zephyr-boards/tree/v1.0.1)
 
 ### Removed
 
@@ -36,14 +36,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.5.0] - 2023-07-26
 
 ### Added
+
 - Add a `CHANGELOG.md` file to track changes moving forward.
 - Add `get_network_info` RPC.
 - Log modem firmware version.
 
 ### Fixed
 
-* Add missing copyright & license info.
-* Fix `CONFIG_MBEDTLS_SSL_MAX_CONTENT_LEN` and `CONFIG_MINIMAL_LIBC_MALLOC_ARENA_SIZE` build warnings.
+- Add missing copyright & license info.
+- Fix `CONFIG_MBEDTLS_SSL_MAX_CONTENT_LEN` and `CONFIG_MINIMAL_LIBC_MALLOC_ARENA_SIZE` build warnings.
 
 ### Changed
 
