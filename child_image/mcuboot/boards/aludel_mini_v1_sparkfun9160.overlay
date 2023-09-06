@@ -1,0 +1,24 @@
+/*
+ * Copyright (c) 2023 Golioth, Inc.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*
+ * This disables the external NOR flash in mcuboot.
+ *
+ * On ncs >= v2.4.0, the w25q32jv node in the the devicetree for the
+ * aludel_mini_v1_sparkfun9160 board automatically enables SPI_NOR (due to
+ * compatible = "jedec,spi-nor") which uses the SPI3 peripheral.
+ *
+ * This breaks the CAN functionality in this reference design which also uses
+ * the SPI3 peripheral on the aludel_mini_v1_sparkfun9160 board.
+ *
+ * Since we're not using the external NOR flash in this reference design, we'll
+ * just delete the w25q32jv node in the device tree until we find a better fix.
+ *
+ * NOTE: we could achieve the same result by setting CONFIG_SPI_NOR=n in
+ * app/child_image/mcuboot.conf, but this would disable the NOR flash for all
+ * boards.
+ */
+/delete-node/ &w25q32jv;
