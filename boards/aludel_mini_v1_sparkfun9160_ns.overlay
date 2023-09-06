@@ -30,6 +30,22 @@
 	current-speed = <38400>;
 };
 
+/*
+ * In the devicetree definition for this board, the SPI bus on the Aludel Click
+ * headers is connected to the SPI2 peripheral on the nRF9160. However, the
+ * nRF9160 has a limitation that any peripherals sharing an ID and base address
+ * may not be used simultaneously. Since the GPS Click module is using the
+ * UART2 peripheral, the SPI2 peripheral cannot be used at the same time to
+ * interface with the MCP2515 controller on the CAN Click board.
+ *
+ * As a workaround, we can disable the SPI2 peripheral and remap the SPI pins on
+ * the Click headers to the SPI3 peripheral insatead. However, the SPI3
+ * peripheral is connected to the external W25Q32JV NOR flash on this board.
+ * Since we're not using the external NOR flash in this reference design, we
+ * can simply delete the w25q32jv node from the devicetree to free up the SPI3
+ * peripheral to be remapped to the Click header pins.
+ */
+
 &spi2 {
 	status = "disabled";
 };
