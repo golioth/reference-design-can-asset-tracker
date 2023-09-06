@@ -39,7 +39,7 @@
  * interface with the MCP2515 controller on the CAN Click board.
  *
  * As a workaround, we can disable the SPI2 peripheral and remap the SPI pins on
- * the Click headers to the SPI3 peripheral insatead. However, the SPI3
+ * the Click headers to the SPI3 peripheral instead. However, the SPI3
  * peripheral is connected to the external W25Q32JV NOR flash on this board.
  * Since we're not using the external NOR flash in this reference design, we
  * can simply delete the w25q32jv node from the devicetree to free up the SPI3
