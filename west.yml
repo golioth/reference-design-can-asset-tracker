@@ -31,7 +31,7 @@ manifest:
 
     - name: golioth-zephyr-boards
       path: deps/modules/lib/golioth-boards
-      revision: v1.0.1
+      revision: 1868ef155d38347d89ce0c86496418d1f02ea920
       url: https://github.com/golioth/golioth-zephyr-boards
 
     - name: libostentus
