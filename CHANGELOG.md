@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Merge changes from [`golioth/reference-design-template@f1d2422`](https://github.com/golioth/reference-design-template/commit/f1d2422ba04e13ebf66b36529abdbb781896e479)
 - Change sensor readings logging level from `LOG_INF` to `LOG_DBG`
+- Upgrade dependencies:
+  - [`golioth/golioth-zephyr-boards@1868ef1`](https://github.com/golioth/golioth-zephyr-boards/commit/1868ef155d38347d89ce0c86496418d1f02ea920)
+
 
 ### Removed
 
