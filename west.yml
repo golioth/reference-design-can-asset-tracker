@@ -1,4 +1,4 @@
-# Copyright (c) 2023 Golioth, Inc.
+# Copyright (c) 2022-2023 Golioth, Inc.
 # SPDX-License-Identifier: Apache-2.0
 
 manifest:
@@ -7,7 +7,7 @@ manifest:
   projects:
     - name: golioth
       path: modules/lib/golioth
-      revision: f01824d8f0943463ee07cb493103a63221599c79
+      revision: v0.7.1
       url: https://github.com/golioth/golioth-zephyr-sdk
       west-commands: scripts/west-commands.yml
       import:
@@ -23,25 +23,25 @@ manifest:
           - mcuboot
           - net-tools
           - nrfxlib
-          - tfm-mcuboot
-          - trusted-firmware-m
-          - qcbor
           - segger
+          - tfm-mcuboot
           - tinycrypt
+          - trusted-firmware-m
+          - zcbor
 
     - name: golioth-zephyr-boards
-      path: app/golioth-boards
-      revision: 0a0a27dc2facc4245be0d15b9b36ce526cbf9262
-      url: git@github.com:golioth/golioth-zephyr-boards.git
+      path: deps/modules/lib/golioth-boards
+      revision: 1868ef155d38347d89ce0c86496418d1f02ea920
+      url: https://github.com/golioth/golioth-zephyr-boards
 
     - name: libostentus
-      path: app/src/libostentus
-      revision: 5d37e4160959881932d1dd869e1d238096878cf2
-      url: git@github.com:golioth/libostentus.git
+      path: deps/modules/lib/libostentus
+      revision: v1.0.0
+      url: https://github.com/golioth/libostentus
 
     - name: zephyr-network-info
-      path: app/src/network_info
-      revision: eda40fe3fa186fa47888f8b461acbf444cf6c7e6
+      path: deps/modules/lib/network-info
+      revision: v1.0.1
       url: https://github.com/golioth/zephyr-network-info
 
     - name: minmea

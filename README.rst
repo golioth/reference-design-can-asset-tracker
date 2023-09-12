@@ -1,5 +1,5 @@
 ..
-   Copyright (c) 2023 Golioth, Inc.
+   Copyright (c) 2022-2023 Golioth, Inc.
    SPDX-License-Identifier: Apache-2.0
 
 CAN Asset Tracker Reference Design
@@ -186,12 +186,6 @@ and ``state`` endpoints.
   received from the ``desired`` endpoints. The cloud may read the ``state``
   endpoints to determine device status, but only the device should ever write to
   the ``state`` endpoints.
-
-Further Information in Header Files
-===================================
-
-Please refer to the comments in each header file for a service-by-service
-explanation of this template.
 
 Hardware Variations
 *******************

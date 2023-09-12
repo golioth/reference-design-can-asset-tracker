@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Golioth, Inc.
+ * Copyright (c) 2022-2023 Golioth, Inc.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -18,9 +18,11 @@ LOG_MODULE_REGISTER(app_work, LOG_LEVEL_DBG);
 
 #include "app_work.h"
 #include "app_settings.h"
-#include "libostentus/libostentus.h"
 #include "lib/minmea/minmea.h"
 
+#ifdef CONFIG_LIB_OSTENTUS
+#include <libostentus.h>
+#endif
 #ifdef CONFIG_ALUDEL_BATTERY_MONITOR
 #include "battery_monitor/battery.h"
 #endif
@@ -148,7 +150,6 @@ void process_can_frames_thread(void *arg1, void *arg2, void *arg3)
 			 0xCC, 0xCC, 0xCC, 0xCC}};
 	int vehicle_speed;
 	uint8_t data_len;
-	char vehicle_speed_str[9];
 
 	/* Automatically put frames matching can_filter into can_msgq */
 	can_filter_id = can_add_rx_filter_msgq(can_dev, &can_msgq, &can_filter);
@@ -201,11 +202,16 @@ void process_can_frames_thread(void *arg1, void *arg2, void *arg3)
 		k_mutex_unlock(&shared_data_mutex);
 
 		/* Log vehicle speed */
-		LOG_INF("Vehicle Speed Sensor: %d km/h", vehicle_speed);
+		LOG_DBG("Vehicle Speed Sensor: %d km/h", vehicle_speed);
 
 		/* Update Ostentus slide values */
-		snprintk(vehicle_speed_str, sizeof(vehicle_speed_str), "%d km/h", vehicle_speed);
-		slide_set(VEHICLE_SPEED, vehicle_speed_str, strlen(vehicle_speed_str));
+		IF_ENABLED(CONFIG_LIB_OSTENTUS, (
+			char vehicle_speed_str[9];
+
+			snprintk(vehicle_speed_str, sizeof(vehicle_speed_str), "%d km/h",
+				 vehicle_speed);
+			slide_set(VEHICLE_SPEED, vehicle_speed_str, strlen(vehicle_speed_str));
+		));
 
 		k_sleep(K_SECONDS(get_vehicle_speed_delay_s()));
 	}
@@ -219,8 +225,6 @@ void process_rmc_frames_thread(void *arg1, void *arg2, void *arg3)
 	int err;
 	struct minmea_sentence_rmc rmc_frame;
 	struct can_asset_tracker_data cat_frame;
-	char lat_str[12];
-	char lon_str[12];
 
 	while (k_msgq_get(&rmc_msgq, &rmc_frame, K_FOREVER) == 0) {
 		cat_frame.rmc_frame = rmc_frame;
@@ -239,14 +243,21 @@ void process_rmc_frames_thread(void *arg1, void *arg2, void *arg3)
 			LOG_ERR("Unable to add cat_frame to cat_msgq: %d", err);
 		}
 
-		LOG_INF("GPS Position%s: %f, %f", cat_frame.rmc_frame.valid ? "" : " (fake)",
+		LOG_DBG("GPS Position%s: %f, %f", cat_frame.rmc_frame.valid ? "" : " (fake)",
 			minmea_tocoord(&rmc_frame.latitude), minmea_tocoord(&rmc_frame.longitude));
 
 		/* Update Ostentus slide values */
-		snprintk(lat_str, sizeof(lat_str), "%f", minmea_tocoord(&rmc_frame.latitude));
-		snprintk(lon_str, sizeof(lon_str), "%f", minmea_tocoord(&rmc_frame.longitude));
-		slide_set(LATITUDE, lat_str, strlen(lat_str));
-		slide_set(LONGITUDE, lon_str, strlen(lon_str));
+		IF_ENABLED(CONFIG_LIB_OSTENTUS, (
+			char lat_str[12];
+			char lon_str[12];
+
+			snprintk(lat_str, sizeof(lat_str), "%f",
+				 minmea_tocoord(&rmc_frame.latitude));
+			snprintk(lon_str, sizeof(lon_str), "%f",
+				 minmea_tocoord(&rmc_frame.longitude));
+			slide_set(LATITUDE, lat_str, strlen(lat_str));
+			slide_set(LONGITUDE, lon_str, strlen(lon_str));
+		));
 	}
 }
 
@@ -340,10 +351,11 @@ void app_work_sensor_read(void)
 	char lat_str[12];
 	char lon_str[12];
 
-	IF_ENABLED(CONFIG_ALUDEL_BATTERY_MONITOR,
-		   (read_and_report_battery();
-		    slide_set(BATTERY_V, get_batt_v_str(), strlen(get_batt_v_str()));
-		    slide_set(BATTERY_LVL, get_batt_lvl_str(), strlen(get_batt_lvl_str()));));
+	IF_ENABLED(CONFIG_ALUDEL_BATTERY_MONITOR, (
+		read_and_report_battery();
+		slide_set(BATTERY_V, get_batt_v_str(), strlen(get_batt_v_str()));
+		slide_set(BATTERY_LVL, get_batt_lvl_str(), strlen(get_batt_lvl_str()));
+	));
 
 	while (k_msgq_get(&cat_msgq, &cached_data, K_NO_WAIT) == 0) {
 		snprintk(lat_str, sizeof(lat_str), "%f",
@@ -369,8 +381,6 @@ void app_work_sensor_read(void)
 				 "true", cached_data.vehicle_speed);
 		}
 
-		LOG_DBG("%s", json_buf);
-
 		err = golioth_stream_push(client, "tracker", GOLIOTH_CONTENT_FORMAT_APP_JSON,
 					  json_buf, strlen(json_buf));
 		if (err)
@@ -384,7 +394,7 @@ void app_work_init(struct golioth_client *work_client)
 
 	client = work_client;
 
-	LOG_INF("Initializing GNSS receiver");
+	LOG_DBG("Initializing GNSS receiver");
 
 	err = gpio_pin_configure_dt(&gnss7_sel, GPIO_OUTPUT_ACTIVE);
 	if (err < 0) {
@@ -399,7 +409,7 @@ void app_work_init(struct golioth_client *work_client)
 	uart_irq_callback_user_data_set(uart_dev, serial_cb, NULL);
 	uart_irq_rx_enable(uart_dev);
 
-	LOG_INF("Initializing CAN controller");
+	LOG_DBG("Initializing CAN controller");
 
 	if (!device_is_ready(can_dev)) {
 		LOG_ERR("CAN device %s not ready", can_dev->name);

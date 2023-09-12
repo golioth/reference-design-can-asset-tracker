@@ -1,4 +1,4 @@
-# Copyright (c) 2023 Golioth, Inc.
+# Copyright (c) 2022-2023 Golioth, Inc.
 # SPDX-License-Identifier: Apache-2.0
 
 cmake_minimum_required(VERSION 3.20.0)
@@ -17,8 +17,6 @@ target_sources(app PRIVATE src/app_settings.c)
 target_sources(app PRIVATE src/app_state.c)
 target_sources(app PRIVATE src/app_work.c)
 target_sources(app PRIVATE src/dfu/app_dfu.c)
-target_sources(app PRIVATE src/libostentus/libostentus.c)
 target_sources_ifdef(CONFIG_BOOTLOADER_MCUBOOT app PRIVATE src/dfu/flash.c)
 
 add_subdirectory_ifdef(CONFIG_ALUDEL_BATTERY_MONITOR src/battery_monitor)
-add_subdirectory(src/network_info)
