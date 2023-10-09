@@ -24,6 +24,7 @@ manifest:
           - net-tools
           - nrfxlib
           - segger
+          - qcbor
           - tfm-mcuboot
           - tinycrypt
           - trusted-firmware-m
