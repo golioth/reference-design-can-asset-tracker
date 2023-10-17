@@ -351,7 +351,7 @@ recommend the following workflow to pull in future changes:
 .. _MikroE GNSS 7 Click: https://www.mikroe.com/gnss-7-click
 .. _Reference Design Template: https://github.com/golioth/reference-design-template
 .. _OBD-II / CAN Asset Tracker Project Page: https://projects.golioth.io/reference-designs/can-asset-tracker/
-.. _nRF9160 DK Follow-Along Guide: https://example.com
+.. _nRF9160 DK Follow-Along Guide: https://projects.golioth.io/reference-designs/can-asset-tracker/guide-nrf9160-dk
 .. _releases: https://github.com/golioth/reference-design-can-asset-tracker/releases
 .. _Zephyr Getting Started Guide: https://docs.zephyrproject.org/latest/develop/getting_started/
 .. _Developer Training: https://training.golioth.io
