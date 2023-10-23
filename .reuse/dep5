@@ -1,0 +1,8 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: reference-design-can-asset-tracker
+Upstream-Contact: Golioth, Inc. <https://golioth.io>
+Source: https://github.com/golioth/reference-design-can-asset-tracker
+
+Files: *.jpg *.jpeg *.png
+Copyright: Golioth, Inc. <https://golioth.io>
+License: Apache-2.0
