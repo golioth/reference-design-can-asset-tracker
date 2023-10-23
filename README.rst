@@ -46,7 +46,7 @@ This firmware can be built for a variety of supported hardware platforms.
      - Zephyr Board
      - Follow-Along Guide
 
-   * - .. image:: https://projects.golioth.io/assets/images/can_asset_tracker_fah_nrf9160_dk-1c2cc56dc6963c38ba41d726d2e83778.jpg
+   * - .. image:: images/can_asset_tracker_fah_nrf9160_dk.jpg
           :width: 240
      - ``nrf9160dk_nrf9160_ns``
      - `nRF9160 DK Follow-Along Guide`_
@@ -57,7 +57,7 @@ This firmware can be built for a variety of supported hardware platforms.
    * - Hardware
      - Zephyr Board
      - Project Page
-   * - .. image:: https://projects.golioth.io/assets/images/can_asset_tracker_top_zoom-062711c5150bda53c69cbf4fba769330.jpg
+   * - .. image:: images/can_asset_tracker_aludel_mini_v1_photo_top.jpg
           :width: 240
      - ``aludel_mini_v1_sparkfun9160_ns``
      - `OBD-II / CAN Asset Tracker Project Page`_
