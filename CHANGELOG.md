@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+* Merge changes from [`golioth/reference-design-template@324fbc3`](https://github.com/golioth/reference-design-template/commit/324fbc35499c708a919e27fbcea05d75cc302c51)
+
 ## [1.7.0] - 2023-09-12
 
 ### Changed

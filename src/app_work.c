@@ -353,8 +353,10 @@ void app_work_sensor_read(void)
 
 	IF_ENABLED(CONFIG_ALUDEL_BATTERY_MONITOR, (
 		read_and_report_battery();
-		slide_set(BATTERY_V, get_batt_v_str(), strlen(get_batt_v_str()));
-		slide_set(BATTERY_LVL, get_batt_lvl_str(), strlen(get_batt_lvl_str()));
+		IF_ENABLED(CONFIG_LIB_OSTENTUS, (
+			slide_set(BATTERY_V, get_batt_v_str(), strlen(get_batt_v_str()));
+			slide_set(BATTERY_LVL, get_batt_lvl_str(), strlen(get_batt_lvl_str()));
+		));
 	));
 
 	while (k_msgq_get(&cat_msgq, &cached_data, K_NO_WAIT) == 0) {
