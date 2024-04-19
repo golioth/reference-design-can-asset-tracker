@@ -3,7 +3,7 @@
    SPDX-License-Identifier: Apache-2.0
 
 OBD-II / CAN Asset Tracker Reference Design
-##################################
+###########################################
 
 This repository contains the firmware source code and `pre-built release
 firmware images <releases_>`_ for the Golioth OBD-II / CAN Asset Tracker
