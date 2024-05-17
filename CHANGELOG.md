@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Merge changes from [`golioth/reference-design-template@template_v2.1.0`](https://github.com/golioth/reference-design-template/tree/template_v2.1.0).
 - Prevent sending excessive warning log messages on flaky connections.
+- Only attempt to send sensor data when Golioth client is connected.
 
 ### Removed
 

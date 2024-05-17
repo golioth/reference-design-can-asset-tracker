@@ -439,34 +439,38 @@ void app_sensors_read_and_stream(void)
 		));
 	));
 
-	while (k_msgq_get(&cat_msgq, &cached_data, K_NO_WAIT) == 0) {
-		snprintk(lat_str, sizeof(lat_str), "%f",
-			 minmea_tocoord(&cached_data.rmc_frame.latitude));
-		snprintk(lon_str, sizeof(lon_str), "%f",
-			 minmea_tocoord(&cached_data.rmc_frame.longitude));
-		snprintk(ts_str, sizeof(ts_str), "20%02d-%02d-%02dT%02d:%02d:%02d.%03dZ",
-			 cached_data.rmc_frame.date.year, cached_data.rmc_frame.date.month,
-			 cached_data.rmc_frame.date.day, cached_data.rmc_frame.time.hours,
-			 cached_data.rmc_frame.time.minutes, cached_data.rmc_frame.time.seconds,
-			 cached_data.rmc_frame.time.microseconds);
+	if (golioth_client_is_connected(client)) {
+		while (k_msgq_get(&cat_msgq, &cached_data, K_NO_WAIT) == 0) {
+			snprintk(lat_str, sizeof(lat_str), "%f",
+				 minmea_tocoord(&cached_data.rmc_frame.latitude));
+			snprintk(lon_str, sizeof(lon_str), "%f",
+				 minmea_tocoord(&cached_data.rmc_frame.longitude));
+			snprintk(ts_str, sizeof(ts_str), "20%02d-%02d-%02dT%02d:%02d:%02d.%03dZ",
+				 cached_data.rmc_frame.date.year, cached_data.rmc_frame.date.month,
+				 cached_data.rmc_frame.date.day, cached_data.rmc_frame.time.hours,
+				 cached_data.rmc_frame.time.minutes,
+				 cached_data.rmc_frame.time.seconds,
+				 cached_data.rmc_frame.time.microseconds);
 
-		if (cached_data.rmc_frame.valid == true) {
-			/*
-			 * `time` will not appear in the `data` payload once received
-			 * by Golioth LightDB Stream, but instead will override the
-			 * `time` timestamp of the data.
-			 */
-			snprintk(json_buf, sizeof(json_buf), JSON_FMT, ts_str, lat_str, lon_str,
-				 "false", cached_data.vehicle_speed);
-		} else { /* Fake GPS data does not have a `time` field */
-			snprintk(json_buf, sizeof(json_buf), JSON_FMT_FAKE_GPS, lat_str, lon_str,
-				 "true", cached_data.vehicle_speed);
+			if (cached_data.rmc_frame.valid == true) {
+				/*
+				 * `time` will not appear in the `data` payload once received
+				 * by Golioth LightDB Stream, but instead will override the
+				 * `time` timestamp of the data.
+				 */
+				snprintk(json_buf, sizeof(json_buf), JSON_FMT, ts_str, lat_str,
+					 lon_str, "false", cached_data.vehicle_speed);
+			} else { /* Fake GPS data does not have a `time` field */
+				snprintk(json_buf, sizeof(json_buf), JSON_FMT_FAKE_GPS, lat_str,
+					 lon_str, "true", cached_data.vehicle_speed);
+			}
+
+			err = golioth_stream_set_sync(client, "tracker", GOLIOTH_CONTENT_TYPE_JSON,
+						      json_buf, strlen(json_buf),
+						      GOLIOTH_STREAM_TIMEOUT_S);
+			if (err)
+				LOG_ERR("Failed to send sensor data to Golioth: %d", err);
 		}
-
-		err = golioth_stream_set_sync(client, "tracker", GOLIOTH_CONTENT_TYPE_JSON,
-					      json_buf, strlen(json_buf), GOLIOTH_STREAM_TIMEOUT_S);
-		if (err)
-			LOG_ERR("Failed to send sensor data to Golioth: %d", err);
 	}
 }
 
