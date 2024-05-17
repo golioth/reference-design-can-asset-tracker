@@ -1,22 +1,23 @@
 /*
- * Copyright (c) 2022-2023 Golioth, Inc.
+ * Copyright (c) 2024 Golioth, Inc.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #include <zephyr/logging/log.h>
-LOG_MODULE_REGISTER(app_work, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(app_sensors, LOG_LEVEL_DBG);
 
+#include <golioth/client.h>
+#include <golioth/stream.h>
+#include <zephyr/drivers/gpio.h>
 #include <zephyr/kernel.h>
 #include <zephyr/kernel/thread_stack.h>
-#include <net/golioth/system_client.h>
 #include <zephyr/device.h>
-#include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/uart.h>
 #include <zephyr/drivers/can.h>
 #include <zephyr/sys/byteorder.h>
 
-#include "app_work.h"
+#include "app_sensors.h"
 #include "app_settings.h"
 #include "lib/minmea/minmea.h"
 
@@ -35,6 +36,7 @@ LOG_MODULE_REGISTER(app_work, LOG_LEVEL_DBG);
 #define OBD2_SERVICE_SHOW_CURRENT_DATA 0x01
 #define ODB2_PID_VEHICLE_SPEED	       0x0D
 #define ODB2_PID_VEHICLE_SPEED_DLC     4
+#define GOLIOTH_STREAM_TIMEOUT_S       2
 
 static struct golioth_client *client;
 
@@ -73,9 +75,35 @@ K_MUTEX_DEFINE(shared_data_mutex);
 static int g_vehicle_speed = -1;
 
 /* Formatting strings for sending sensor JSON to Golioth */
-#define JSON_FMT                                                                                   \
-	"{\"time\":\"%s\",\"gps\":{\"lat\":%s,\"lon\":%s,\"fake\":%s},\"vehicle\":{\"speed\":%d}}"
-#define JSON_FMT_FAKE_GPS "{\"gps\":{\"lat\":%s,\"lon\":%s,\"fake\":%s},\"vehicle\":{\"speed\":%d}}"
+/* clang-format off */
+#define JSON_FMT \
+"{" \
+	"\"time\":\"%s\"," \
+	"\"gps\":" \
+	"{" \
+		"\"lat\":%s," \
+		"\"lon\":%s," \
+		"\"fake\":%s" \
+	"}," \
+	"\"vehicle\":" \
+	"{" \
+		"\"speed\":%d" \
+	"}" \
+"}"
+#define JSON_FMT_FAKE_GPS \
+"{" \
+	"\"gps\":" \
+	"{" \
+		"\"lat\":%s," \
+		"\"lon\":%s," \
+		"\"fake\":%s" \
+	"}," \
+	"\"vehicle\":" \
+	"{" \
+		"\"speed\":%d" \
+	"}" \
+"}"
+/* clang-format on */
 
 /**
  * Convert a floating point coordinate value to a minmea_float coordinate.
@@ -340,61 +368,9 @@ void serial_cb(const struct device *dev, void *user_data)
 	}
 }
 
-/* This will be called by the main() loop */
-/* Do all of your work here! */
-void app_work_sensor_read(void)
+void app_sensors_init(void)
 {
 	int err;
-	struct can_asset_tracker_data cached_data;
-	char json_buf[256];
-	char ts_str[32];
-	char lat_str[12];
-	char lon_str[12];
-
-	IF_ENABLED(CONFIG_ALUDEL_BATTERY_MONITOR, (
-		read_and_report_battery();
-		IF_ENABLED(CONFIG_LIB_OSTENTUS, (
-			slide_set(BATTERY_V, get_batt_v_str(), strlen(get_batt_v_str()));
-			slide_set(BATTERY_LVL, get_batt_lvl_str(), strlen(get_batt_lvl_str()));
-		));
-	));
-
-	while (k_msgq_get(&cat_msgq, &cached_data, K_NO_WAIT) == 0) {
-		snprintk(lat_str, sizeof(lat_str), "%f",
-			 minmea_tocoord(&cached_data.rmc_frame.latitude));
-		snprintk(lon_str, sizeof(lon_str), "%f",
-			 minmea_tocoord(&cached_data.rmc_frame.longitude));
-		snprintk(ts_str, sizeof(ts_str), "20%02d-%02d-%02dT%02d:%02d:%02d.%03dZ",
-			 cached_data.rmc_frame.date.year, cached_data.rmc_frame.date.month,
-			 cached_data.rmc_frame.date.day, cached_data.rmc_frame.time.hours,
-			 cached_data.rmc_frame.time.minutes, cached_data.rmc_frame.time.seconds,
-			 cached_data.rmc_frame.time.microseconds);
-
-		if (cached_data.rmc_frame.valid == true) {
-			/*
-			 * `time` will not appear in the `data` payload once received
-			 * by Golioth LightDB Stream, but instead will override the
-			 * `time` timestamp of the data.
-			 */
-			snprintk(json_buf, sizeof(json_buf), JSON_FMT, ts_str, lat_str, lon_str,
-				 "false", cached_data.vehicle_speed);
-		} else { /* Fake GPS data does not have a `time` field */
-			snprintk(json_buf, sizeof(json_buf), JSON_FMT_FAKE_GPS, lat_str, lon_str,
-				 "true", cached_data.vehicle_speed);
-		}
-
-		err = golioth_stream_push(client, "tracker", GOLIOTH_CONTENT_FORMAT_APP_JSON,
-					  json_buf, strlen(json_buf));
-		if (err)
-			LOG_ERR("Failed to send sensor data to Golioth: %d", err);
-	}
-}
-
-void app_work_init(struct golioth_client *work_client)
-{
-	int err;
-
-	client = work_client;
 
 	LOG_DBG("Initializing GNSS receiver");
 
@@ -442,4 +418,59 @@ void app_work_init(struct golioth_client *work_client)
 	if (!process_rmc_frames_tid) {
 		LOG_ERR("Error spawning RMC frame processing thread");
 	}
+}
+
+/* This will be called by the main() loop */
+/* Do all of your work here! */
+void app_sensors_read_and_stream(void)
+{
+	int err;
+	struct can_asset_tracker_data cached_data;
+	char json_buf[256];
+	char ts_str[32];
+	char lat_str[12];
+	char lon_str[12];
+
+	IF_ENABLED(CONFIG_ALUDEL_BATTERY_MONITOR, (
+		read_and_report_battery(client);
+		IF_ENABLED(CONFIG_LIB_OSTENTUS, (
+			slide_set(BATTERY_V, get_batt_v_str(), strlen(get_batt_v_str()));
+			slide_set(BATTERY_LVL, get_batt_lvl_str(), strlen(get_batt_lvl_str()));
+		));
+	));
+
+	while (k_msgq_get(&cat_msgq, &cached_data, K_NO_WAIT) == 0) {
+		snprintk(lat_str, sizeof(lat_str), "%f",
+			 minmea_tocoord(&cached_data.rmc_frame.latitude));
+		snprintk(lon_str, sizeof(lon_str), "%f",
+			 minmea_tocoord(&cached_data.rmc_frame.longitude));
+		snprintk(ts_str, sizeof(ts_str), "20%02d-%02d-%02dT%02d:%02d:%02d.%03dZ",
+			 cached_data.rmc_frame.date.year, cached_data.rmc_frame.date.month,
+			 cached_data.rmc_frame.date.day, cached_data.rmc_frame.time.hours,
+			 cached_data.rmc_frame.time.minutes, cached_data.rmc_frame.time.seconds,
+			 cached_data.rmc_frame.time.microseconds);
+
+		if (cached_data.rmc_frame.valid == true) {
+			/*
+			 * `time` will not appear in the `data` payload once received
+			 * by Golioth LightDB Stream, but instead will override the
+			 * `time` timestamp of the data.
+			 */
+			snprintk(json_buf, sizeof(json_buf), JSON_FMT, ts_str, lat_str, lon_str,
+				 "false", cached_data.vehicle_speed);
+		} else { /* Fake GPS data does not have a `time` field */
+			snprintk(json_buf, sizeof(json_buf), JSON_FMT_FAKE_GPS, lat_str, lon_str,
+				 "true", cached_data.vehicle_speed);
+		}
+
+		err = golioth_stream_set_sync(client, "tracker", GOLIOTH_CONTENT_TYPE_JSON,
+					      json_buf, strlen(json_buf), GOLIOTH_STREAM_TIMEOUT_S);
+		if (err)
+			LOG_ERR("Failed to send sensor data to Golioth: %d", err);
+	}
+}
+
+void app_sensors_set_client(struct golioth_client *sensors_client)
+{
+	client = sensors_client;
 }

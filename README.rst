@@ -1,5 +1,5 @@
 ..
-   Copyright (c) 2022-2023 Golioth, Inc.
+   Copyright (c) 2024 Golioth, Inc.
    SPDX-License-Identifier: Apache-2.0
 
 OBD-II / CAN Asset Tracker Reference Design
@@ -96,7 +96,7 @@ This firmware implements the following features from the Golioth Zephyr SDK:
 Device Settings Service
 -----------------------
 
-The following settings should be set in the Device Settings menu of the `Golioth
+The following settings can be set in the Device Settings menu of the `Golioth
 Console`_.
 
 ``LOOP_DELAY_S``
@@ -145,8 +145,8 @@ Stream service:
 * ``gps/fake``: ``true`` if GPS location data is fake, otherwise ``false``
 * ``vehicle/speed``: Vehicle Speed (km/h)
 
-Battery voltage and level readings are periodically sent to the following
-endpoints:
+On hardware platforms with support for battery monitoring, battery voltage and
+level readings are periodically sent to the following ``battery/*`` endpoints:
 
 * ``battery/batt_v``: Battery Voltage (V)
 * ``battery/batt_lvl``: Battery Level (%)
@@ -251,6 +251,10 @@ you make to the application itself should be committed inside this repository.
 The ``build`` and ``deps`` directories in the root of the workspace are managed
 outside of this git repository by the ``west`` meta-tool.
 
+Prior to building, update ``CONFIG_MCUBOOT_IMGTOOL_SIGN_VERSION`` in the
+``prj.conf`` file to reflect the firmware version number you want to assign to
+this build.
+
 .. pull-quote::
    [!IMPORTANT]
 
@@ -258,19 +262,16 @@ outside of this git repository by the ``west`` meta-tool.
    ``<your_zephyr_board_id>`` with the actual Zephyr board from the table above
    that matches your follow-along hardware.
 
-   In addition, replace ``<your.semantic.version>`` with a `SemVer`_-compliant
-   version string (e.g. ``1.2.3``) that will be used by the DFU service when
-   checking for firmware updates.
+.. code-block:: text
+
+   $ (.venv) west build -p -b <your_zephyr_board_id> app
+
+For example, to build firmware for the `Nordic nRF9160 DK`_-based follow-along
+hardware:
 
 .. code-block:: text
 
-   $ (.venv) west build -p -b <your_zephyr_board_id> app -- -DCONFIG_MCUBOOT_IMAGE_VERSION=\"<your.semantic.version>\"
-
-For example, to build firmware version ``1.2.3`` for the `Nordic nRF9160 DK`_-based follow-along hardware:
-
-.. code-block:: text
-
-   $ (.venv) west build -p -b nrf9160dk_nrf9160_ns app -- -DCONFIG_MCUBOOT_IMAGE_VERSION=\"1.2.3\"
+   $ (.venv) west build -p -b nrf9160dk_nrf9160_ns app
 
 Flash the firmware
 ==================
@@ -346,9 +347,7 @@ recommend the following workflow to pull in future changes:
 .. _Nordic nRF9160 DK: https://www.nordicsemi.com/Products/Development-hardware/nrf9160-dk
 .. _golioth-zephyr-boards: https://github.com/golioth/golioth-zephyr-boards
 .. _libostentus: https://github.com/golioth/libostentus
-.. _MikroE Arduino UNO click shield: https://www.mikroe.com/arduino-uno-click-shield
-.. _MikroE CAN SPI Click 3.3V: https://www.mikroe.com/can-spi-33v-click
-.. _MikroE GNSS 7 Click: https://www.mikroe.com/gnss-7-click
+.. _zephyr-network-info: https://github.com/golioth/zephyr-network-info
 .. _Reference Design Template: https://github.com/golioth/reference-design-template
 .. _OBD-II / CAN Asset Tracker Project Page: https://projects.golioth.io/reference-designs/can-asset-tracker/
 .. _nRF9160 DK Follow-Along Guide: https://projects.golioth.io/reference-designs/can-asset-tracker/guide-nrf9160-dk
@@ -356,4 +355,6 @@ recommend the following workflow to pull in future changes:
 .. _Zephyr Getting Started Guide: https://docs.zephyrproject.org/latest/develop/getting_started/
 .. _Developer Training: https://training.golioth.io
 .. _SemVer: https://semver.org
-.. _zephyr-network-info: https://github.com/golioth/zephyr-network-info
+.. _MikroE Arduino UNO click shield: https://www.mikroe.com/arduino-uno-click-shield
+.. _MikroE CAN SPI Click 3.3V: https://www.mikroe.com/can-spi-33v-click
+.. _MikroE GNSS 7 Click: https://www.mikroe.com/gnss-7-click

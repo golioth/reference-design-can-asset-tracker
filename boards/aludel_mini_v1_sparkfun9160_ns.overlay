@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Golioth, Inc.
+ * Copyright (c) 2024 Golioth, Inc.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -16,16 +16,12 @@
 	gpio_logic {
 		compatible = "gpio-leds";
 		gnss7_sel: gnss7_sel {
-			gpios = <&feather_header 1 GPIO_ACTIVE_HIGH>;
+			gpios = <&mikrobus_header_1 0 GPIO_ACTIVE_HIGH>; /* AN */
 		};
 	};
 };
 
-&i2c1 {
-	zephyr,concat-buf-size = <48>;
-};
-
-&uart2 {
+&mikrobus_serial {
 	status = "okay";
 	current-speed = <38400>;
 };
@@ -53,12 +49,12 @@
 /delete-node/ &w25q32jv;
 
 &spi3 {
-	cs-gpios = <&feather_header 16 GPIO_ACTIVE_LOW>;
+	cs-gpios = <&mikrobus_header_2 2 GPIO_ACTIVE_LOW>; /* CS */
 
 	mcp2515: mcp2515@0 {
 		compatible = "microchip,mcp2515";
 		spi-max-frequency = <1000000>;
-		int-gpios = <&feather_header 18 GPIO_ACTIVE_LOW>;
+		int-gpios = <&mikrobus_header_2 7 GPIO_ACTIVE_LOW>; /* INT */
 		status = "okay";
 		reg = <0x0>;
 		osc-freq = <10000000>;
