@@ -11,7 +11,7 @@
 
 	aliases {
 		golioth-led = &led2;
-		click-uart = &arduino_serial;
+		mikrobus-serial = &mikrobus_serial;
 		gnss7-sel = &gnss7_sel;
 	};
 
@@ -30,7 +30,8 @@
 
 &mikrobus_spi {
 	status = "okay";
-	cs-gpios = <&mikrobus_header_1 2 GPIO_ACTIVE_LOW>; /* CS */
+	cs-gpios = <&mikrobus_header_1 2 GPIO_ACTIVE_LOW>, /* CLICK_CS1 */
+	           <&mikrobus_header_2 2 GPIO_ACTIVE_LOW>; /* CLICK_CS2 */
 
 	mcp2515: mcp2515@0 {
 		compatible = "microchip,mcp2515";

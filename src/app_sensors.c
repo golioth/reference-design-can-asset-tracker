@@ -40,7 +40,7 @@ LOG_MODULE_REGISTER(app_sensors, LOG_LEVEL_DBG);
 
 static struct golioth_client *client;
 
-#define UART_DEVICE_NODE DT_ALIAS(click_uart)
+#define UART_DEVICE_NODE DT_ALIAS(mikrobus_serial)
 static const struct device *const uart_dev = DEVICE_DT_GET(UART_DEVICE_NODE);
 
 #define UART_SEL DT_ALIAS(gnss7_sel)

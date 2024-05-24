@@ -26,37 +26,15 @@
 	current-speed = <38400>;
 };
 
-/*
- * In the devicetree definition for this board, the SPI bus on the Aludel Click
- * headers is connected to the SPI2 peripheral on the nRF9160. However, the
- * nRF9160 has a limitation that any peripherals sharing an ID and base address
- * may not be used simultaneously. Since the GPS Click module is using the
- * UART2 peripheral, the SPI2 peripheral cannot be used at the same time to
- * interface with the MCP2515 controller on the CAN Click board.
- *
- * As a workaround, we can disable the SPI2 peripheral and remap the SPI pins on
- * the Click headers to the SPI3 peripheral instead. However, the SPI3
- * peripheral is connected to the external W25Q32JV NOR flash on this board.
- * Since we're not using the external NOR flash in this reference design, we
- * can simply delete the w25q32jv node from the devicetree to free up the SPI3
- * peripheral to be remapped to the Click header pins.
- */
+&mikrobus_spi {
+	status = "okay";
 
-&spi2 {
-	status = "disabled";
-};
-
-/delete-node/ &w25q32jv;
-
-&spi3 {
-	cs-gpios = <&mikrobus_header_2 2 GPIO_ACTIVE_LOW>; /* CS */
-
-	mcp2515: mcp2515@0 {
+	mcp2515: mcp2515@1 {
 		compatible = "microchip,mcp2515";
 		spi-max-frequency = <1000000>;
 		int-gpios = <&mikrobus_header_2 7 GPIO_ACTIVE_LOW>; /* INT */
 		status = "okay";
-		reg = <0x0>;
+		reg = <0x1>;
 		osc-freq = <10000000>;
 		bus-speed = <500000>;
 		sjw = <1>;
@@ -64,25 +42,6 @@
 
 		can-transceiver {
 			max-bitrate = <1000000>;
-		};
-	};
-};
-
-&pinctrl {
-	spi3_default: spi3_default {
-		group1 {
-			psels = <NRF_PSEL(SPIM_SCK, 0, 19)>,
-				<NRF_PSEL(SPIM_MOSI, 0, 21)>,
-				<NRF_PSEL(SPIM_MISO, 0, 22)>;
-		};
-	};
-
-	spi3_sleep: spi3_sleep {
-		group1 {
-			psels = <NRF_PSEL(SPIM_SCK, 0, 19)>,
-				<NRF_PSEL(SPIM_MOSI, 0, 21)>,
-				<NRF_PSEL(SPIM_MISO, 0, 22)>;
-			low-power-enable;
 		};
 	};
 };
