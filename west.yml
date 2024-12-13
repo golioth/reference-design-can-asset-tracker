@@ -7,7 +7,7 @@ manifest:
   projects:
     - name: golioth
       path: modules/lib/golioth-firmware-sdk
-      revision: v0.12.2
+      revision: v0.16.0
       url: https://github.com/golioth/golioth-firmware-sdk.git
       west-commands: scripts/west-commands.yml
       submodules: true
@@ -24,6 +24,8 @@ manifest:
           - mcuboot
           - net-tools
           - nrfxlib
+          - oberon-psa-crypto
+          - qcbor
           - segger
           - qcbor
           - tfm-mcuboot
@@ -33,17 +35,17 @@ manifest:
 
     - name: golioth-zephyr-boards
       path: deps/modules/lib/golioth-boards
-      revision: v1.1.1
+      revision: v2.0.1
       url: https://github.com/golioth/golioth-zephyr-boards
 
     - name: libostentus
       path: deps/modules/lib/libostentus
-      revision: v1.0.0
+      revision: v2.0.0
       url: https://github.com/golioth/libostentus
 
     - name: zephyr-network-info
       path: deps/modules/lib/network-info
-      revision: v1.1.1
+      revision: v1.2.0
       url: https://github.com/golioth/zephyr-network-info
 
     - name: minmea

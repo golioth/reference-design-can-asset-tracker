@@ -18,29 +18,28 @@
 	gpio_logic {
 		compatible = "gpio-leds";
 		gnss7_sel: gnss7_sel {
-			gpios = <&mikrobus_header_2 0 GPIO_ACTIVE_HIGH>; /* AN */
+			gpios = <&gpio0 15 GPIO_ACTIVE_HIGH>; /* AN */
 		};
 	};
 };
 
-&mikrobus_serial {
+&arduino_serial {
 	status = "okay";
 	current-speed = <38400>;
 };
 
-&mikrobus_spi {
+&arduino_spi {
 	status = "okay";
-	cs-gpios = <&mikrobus_header_1 2 GPIO_ACTIVE_LOW>; /* CS */
+	cs-gpios = <&gpio0 10 GPIO_ACTIVE_LOW>; /* CS */
 
 	mcp2515: mcp2515@0 {
 		compatible = "microchip,mcp2515";
 		spi-max-frequency = <1000000>;
-		int-gpios = <&mikrobus_header_1 7 GPIO_ACTIVE_LOW>; /* INT */
+		int-gpios = <&gpio0 2 GPIO_ACTIVE_LOW>; /* INT */
 		status = "okay";
 		reg = <0x0>;
 		osc-freq = <10000000>;
-		bus-speed = <500000>;
-		sjw = <1>;
+		bitrate = <500000>;
 		sample-point = <875>;
 
 		can-transceiver {

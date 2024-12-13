@@ -15,7 +15,7 @@ LOG_MODULE_REGISTER(app_settings, LOG_LEVEL_DBG);
 /* How long to wait between uploading to Golioth */
 static int32_t _loop_delay_s = 5;
 #define LOOP_DELAY_S_MAX 43200
-#define LOOP_DELAY_S_MIN 0
+#define LOOP_DELAY_S_MIN 1
 
 /* How long to wait between GPS readings */
 static int32_t _gps_delay_s = 3;
@@ -94,23 +94,25 @@ static enum golioth_settings_status on_fake_gps_enabled_setting(bool new_value, 
 
 static enum golioth_settings_status on_fake_gps_latitude_setting(float new_value, void *arg)
 {
-	if ((new_value < FAKE_GPS_LATITUDE_S_MIN) || (new_value > FAKE_GPS_LATITUDE_S_MAX)) {
-		LOG_ERR("Invalid fake GPS latitude: %.5f", new_value);
+	if ((new_value < (float) FAKE_GPS_LATITUDE_S_MIN) ||
+	    (new_value > (float) FAKE_GPS_LATITUDE_S_MAX)) {
+		LOG_ERR("Invalid fake GPS latitude: %.5f", (double) new_value);
 		return GOLIOTH_SETTINGS_VALUE_OUTSIDE_RANGE;
 	}
 	_fake_gps_latitude_s = new_value;
-	LOG_INF("Set fake GPS latitude to %.5f degrees", new_value);
+	LOG_INF("Set fake GPS latitude to %.5f degrees", (double) new_value);
 	return GOLIOTH_SETTINGS_SUCCESS;
 }
 
 static enum golioth_settings_status on_fake_gps_longitude_setting(float new_value, void *arg)
 {
-	if ((new_value < FAKE_GPS_LONGITUDE_S_MIN) || (new_value > FAKE_GPS_LONGITUDE_S_MAX)) {
-		LOG_ERR("Invalid fake GPS longitude: %.5f", new_value);
+	if ((new_value < (float) FAKE_GPS_LONGITUDE_S_MIN) ||
+	    (new_value > (float) FAKE_GPS_LONGITUDE_S_MAX)) {
+		LOG_ERR("Invalid fake GPS longitude: %.5f", (double) new_value);
 		return GOLIOTH_SETTINGS_VALUE_OUTSIDE_RANGE;
 	}
 	_fake_gps_longitude_s = new_value;
-	LOG_INF("Set fake GPS longitude to %.5f degrees", new_value);
+	LOG_INF("Set fake GPS longitude to %.5f degrees", (double) new_value);
 	return GOLIOTH_SETTINGS_SUCCESS;
 }
 

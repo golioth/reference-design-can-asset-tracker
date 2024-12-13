@@ -9,6 +9,7 @@ LOG_MODULE_REGISTER(app_sensors, LOG_LEVEL_DBG);
 
 #include <golioth/client.h>
 #include <golioth/stream.h>
+#include <zcbor_encode.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/kernel.h>
 #include <zephyr/kernel/thread_stack.h>
@@ -23,6 +24,7 @@ LOG_MODULE_REGISTER(app_sensors, LOG_LEVEL_DBG);
 
 #ifdef CONFIG_LIB_OSTENTUS
 #include <libostentus.h>
+static const struct device *o_dev = DEVICE_DT_GET_ANY(golioth_ostentus);
 #endif
 #ifdef CONFIG_ALUDEL_BATTERY_MONITOR
 #include "battery_monitor/battery.h"
@@ -168,7 +170,7 @@ void process_can_frames_thread(void *arg1, void *arg2, void *arg3)
 	int can_filter_id;
 	struct can_frame can_frame;
 	const struct can_filter can_filter = {
-		.flags = CAN_FILTER_DATA, .id = OBD2_PID_RESPONSE_ID, .mask = CAN_STD_ID_MASK};
+		.flags = 0U, .id = OBD2_PID_RESPONSE_ID, .mask = CAN_STD_ID_MASK};
 	struct can_frame vehicle_speed_request = {
 		.flags = 0,
 		.id = OBD2_PID_REQUEST_ID,
@@ -238,7 +240,7 @@ void process_can_frames_thread(void *arg1, void *arg2, void *arg3)
 
 			snprintk(vehicle_speed_str, sizeof(vehicle_speed_str), "%d km/h",
 				 vehicle_speed);
-			slide_set(VEHICLE_SPEED, vehicle_speed_str, strlen(vehicle_speed_str));
+			ostentus_slide_set(o_dev, VEHICLE_SPEED, vehicle_speed_str, strlen(vehicle_speed_str));
 		));
 
 		k_sleep(K_SECONDS(get_vehicle_speed_delay_s()));
@@ -272,7 +274,8 @@ void process_rmc_frames_thread(void *arg1, void *arg2, void *arg3)
 		}
 
 		LOG_DBG("GPS Position%s: %f, %f", cat_frame.rmc_frame.valid ? "" : " (fake)",
-			minmea_tocoord(&rmc_frame.latitude), minmea_tocoord(&rmc_frame.longitude));
+			(double)minmea_tocoord(&rmc_frame.latitude),
+			(double)minmea_tocoord(&rmc_frame.longitude));
 
 		/* Update Ostentus slide values */
 		IF_ENABLED(CONFIG_LIB_OSTENTUS, (
@@ -280,11 +283,11 @@ void process_rmc_frames_thread(void *arg1, void *arg2, void *arg3)
 			char lon_str[12];
 
 			snprintk(lat_str, sizeof(lat_str), "%f",
-				 minmea_tocoord(&rmc_frame.latitude));
+				 (double) minmea_tocoord(&rmc_frame.latitude));
 			snprintk(lon_str, sizeof(lon_str), "%f",
-				 minmea_tocoord(&rmc_frame.longitude));
-			slide_set(LATITUDE, lat_str, strlen(lat_str));
-			slide_set(LONGITUDE, lon_str, strlen(lon_str));
+				 (double) minmea_tocoord(&rmc_frame.longitude));
+			ostentus_slide_set(o_dev, LATITUDE, lat_str, strlen(lat_str));
+			ostentus_slide_set(o_dev, LONGITUDE, lon_str, strlen(lon_str));
 		));
 	}
 }
@@ -431,19 +434,26 @@ void app_sensors_read_and_stream(void)
 	char lat_str[12];
 	char lon_str[12];
 
+	/* Golioth custom hardware for demos */
 	IF_ENABLED(CONFIG_ALUDEL_BATTERY_MONITOR, (
 		read_and_report_battery(client);
 		IF_ENABLED(CONFIG_LIB_OSTENTUS, (
-			slide_set(BATTERY_V, get_batt_v_str(), strlen(get_batt_v_str()));
-			slide_set(BATTERY_LVL, get_batt_lvl_str(), strlen(get_batt_lvl_str()));
+			ostentus_slide_set(o_dev,
+					   BATTERY_V,
+					   get_batt_v_str(),
+					   strlen(get_batt_v_str()));
+			ostentus_slide_set(o_dev,
+					   BATTERY_LVL,
+					   get_batt_lvl_str(),
+					   strlen(get_batt_lvl_str()));
 		));
 	));
 
 	while (k_msgq_get(&cat_msgq, &cached_data, K_NO_WAIT) == 0) {
 		snprintk(lat_str, sizeof(lat_str), "%f",
-			 minmea_tocoord(&cached_data.rmc_frame.latitude));
+			 (double) minmea_tocoord(&cached_data.rmc_frame.latitude));
 		snprintk(lon_str, sizeof(lon_str), "%f",
-			 minmea_tocoord(&cached_data.rmc_frame.longitude));
+			 (double) minmea_tocoord(&cached_data.rmc_frame.longitude));
 		snprintk(ts_str, sizeof(ts_str), "20%02d-%02d-%02dT%02d:%02d:%02d.%03dZ",
 			 cached_data.rmc_frame.date.year, cached_data.rmc_frame.date.month,
 			 cached_data.rmc_frame.date.day, cached_data.rmc_frame.time.hours,

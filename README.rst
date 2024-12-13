@@ -62,8 +62,93 @@ This firmware can be built for a variety of supported hardware platforms.
      - ``aludel_mini_v1_sparkfun9160_ns``
      - `OBD-II / CAN Asset Tracker Project Page`_
 
-Firmware Overview
-*****************
+Local set up
+************
+
+.. pull-quote::
+   [!IMPORTANT]
+
+   Do not clone this repo using git. Zephyr's ``west`` meta tool should be used to
+   set up your local workspace.
+
+Install the Python virtual environment (recommended)
+====================================================
+
+.. code-block:: shell
+
+   cd ~
+   mkdir golioth-reference-design-coldchain
+   python -m venv golioth-reference-design-coldchain/.venv
+   source golioth-reference-design-coldchain/.venv/bin/activate
+   pip install wheel west
+
+Use ``west`` to initialize and install
+======================================
+
+.. code-block:: shell
+
+   cd ~/golioth-reference-design-coldchain
+   west init -m https://github.com/golioth/reference-design-coldchain.git .
+   west update
+   west zephyr-export
+   pip install -r deps/zephyr/scripts/requirements.txt
+
+Building the application
+************************
+
+Build the Zephyr sample application for the `Nordic nRF9160 DK`_
+(``nrf9160dk_nrf9160_ns``) from the top level of your project. After a
+successful build you will see a new ``build`` directory. Note that any changes
+(and git commits) to the project itself will be inside the ``app`` folder. The
+``build`` and ``deps`` directories being one level higher prevents the repo from
+cataloging all of the changes to the dependencies and the build (so no
+``.gitignore`` is needed).
+
+Prior to building, update ``VERSION`` file to reflect the firmware version number you want to assign
+to this build. Then run the following commands to build and program the firmware onto the device.
+
+
+.. pull-quote::
+   [!IMPORTANT]
+
+   You must perform a pristine build (use ``-p`` or remove the ``build`` directory)
+   after changing the firmware version number in the ``VERSION`` file for the change to take effect.
+
+.. code-block:: text
+
+   $ (.venv) west build -p -b nrf9160dk/nrf9160/ns --sysbuild app
+   $ (.venv) west flash
+
+Configure PSK-ID and PSK using the device shell based on your Golioth
+credentials and reboot:
+
+.. code-block:: text
+
+   uart:~$ settings set golioth/psk-id <my-psk-id@my-project>
+   uart:~$ settings set golioth/psk <my-psk>
+   uart:~$ kernel reboot cold
+
+Add Pipeline to Golioth
+***********************
+
+Golioth uses `Pipelines`_ to route stream data. This gives you flexibility to change your data
+routing without requiring updated device firmware.
+
+Whenever sending stream data, you must enable a pipeline in your Golioth project to configure how
+that data is handled. Add the contents of ``pipelines/batch-json-to-lightdb-stream.yml`` as a new
+pipeline as follows:
+
+   1. Navigate to your project on the Golioth web console.
+   2. Select ``Pipelines`` from the left sidebar and click the ``Create`` button.
+   3. Give your new pipeline a name and paste the pipeline configuration into the editor.
+   4. Click the toggle in the bottom right to enable the pipeline and then click ``Create``.
+
+All data streamed to Golioth in JSON format will now be routed to LightDB Stream and may be viewed
+using the web console. You may change this behavior at any time without updating firmware simply by
+editing this pipeline entry.
+
+Golioth Features
+****************
 
 The OBD-II / CAN Asset Tracker Reference Design connects to the OBD-II
 diagnostic port in a vehicle and continuously records vehicle sensor values
@@ -191,112 +276,6 @@ The following RPCs can be initiated in the Remote Procedure Call menu of the
    * ``3``: ``LOG_LEVEL_INF``
    * ``4``: ``LOG_LEVEL_DBG``
 
-Building the firmware
-*********************
-
-The firmware build instructions below assume you have already set up a Zephyr
-development environment and have some basic familiarity with building firmware
-using the Zephyr Real Time Operating System (RTOS).
-
-If you're brand new to building firmware with Zephyr, you will need to follow
-the `Zephyr Getting Started Guide`_ to install the Zephyr SDK and related
-dependencies.
-
-We also provide free online `Developer Training`_ for Zephyr at:
-
-https://training.golioth.io/docs/zephyr-training
-
-.. pull-quote::
-   [!IMPORTANT]
-
-   Do not clone this repo using git. Zephyr's ``west`` meta-tool should be used
-   to set up your local workspace.
-
-Create a Python virtual environment (recommended)
-=================================================
-
-.. code-block:: shell
-
-   cd ~
-   mkdir golioth-reference-design-can-asset-tracker
-   python -m venv golioth-reference-design-can-asset-tracker/.venv
-   source golioth-reference-design-can-asset-tracker/.venv/bin/activate
-
-Install ``west`` meta-tool
-==========================
-
-.. code-block:: shell
-
-   pip install wheel west
-
-Use ``west`` to initialize the workspace and install dependencies
-=================================================================
-
-.. code-block:: shell
-
-   cd ~/golioth-reference-design-can-aset-tracker
-   west init -m git@github.com:golioth/reference-design-can-asset-tracker.git .
-   west update
-   west zephyr-export
-   pip install -r deps/zephyr/scripts/requirements.txt
-
-Build the firmware
-==================
-
-Build the Zephyr firmware from the top-level workspace of your project. After a
-successful build you will see a new ``build/`` directory.
-
-Note that this git repository was cloned into the ``app`` folder, so any changes
-you make to the application itself should be committed inside this repository.
-The ``build`` and ``deps`` directories in the root of the workspace are managed
-outside of this git repository by the ``west`` meta-tool.
-
-Prior to building, update ``CONFIG_MCUBOOT_IMGTOOL_SIGN_VERSION`` in the
-``prj.conf`` file to reflect the firmware version number you want to assign to
-this build.
-
-.. pull-quote::
-   [!IMPORTANT]
-
-   When running the commands below, make sure to replace the placeholder
-   ``<your_zephyr_board_id>`` with the actual Zephyr board from the table above
-   that matches your follow-along hardware.
-
-.. code-block:: text
-
-   $ (.venv) west build -p -b <your_zephyr_board_id> app
-
-For example, to build firmware for the `Nordic nRF9160 DK`_-based follow-along
-hardware:
-
-.. code-block:: text
-
-   $ (.venv) west build -p -b nrf9160dk_nrf9160_ns app
-
-Flash the firmware
-==================
-
-.. code-block:: text
-
-   $ (.venv) west flash
-
-Provision the device
-====================
-
-In order for the device to securely authenticate with the Golioth Cloud, we need
-to provision the device with a pre-shared key (PSK). This key will persist
-across reboots and only needs to be set once after the device firmware has been
-programmed. In addition, flashing new firmware images with ``west flash`` should
-not erase these stored settings unless the entire device flash is erased.
-
-Configure the PSK-ID and PSK using the device UART shell and reboot the device:
-
-.. code-block:: text
-
-   uart:~$ settings set golioth/psk-id <my-psk-id@my-project>
-   uart:~$ settings set golioth/psk <my-psk>
-   uart:~$ kernel reboot cold
-
 External Libraries
 ******************
 
@@ -345,6 +324,8 @@ recommend the following workflow to pull in future changes:
 
 .. _Golioth Console: https://console.golioth.io
 .. _Nordic nRF9160 DK: https://www.nordicsemi.com/Products/Development-hardware/nrf9160-dk
+.. _Pipelines: https://docs.golioth.io/data-routing
+.. _the Golioth Docs OTA Firmware Upgrade page: https://docs.golioth.io/firmware/golioth-firmware-sdk/firmware-upgrade/firmware-upgrade
 .. _golioth-zephyr-boards: https://github.com/golioth/golioth-zephyr-boards
 .. _libostentus: https://github.com/golioth/libostentus
 .. _zephyr-network-info: https://github.com/golioth/zephyr-network-info
