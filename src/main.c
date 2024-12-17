@@ -7,6 +7,7 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(golioth_can_asset_tracker, LOG_LEVEL_DBG);
 
+#include <app_version.h>
 #include "app_rpc.h"
 #include "app_settings.h"
 #include "app_state.h"
@@ -22,6 +23,8 @@ LOG_MODULE_REGISTER(golioth_can_asset_tracker, LOG_LEVEL_DBG);
 #endif
 #ifdef CONFIG_LIB_OSTENTUS
 #include <libostentus.h>
+#include <libostentus_regmap.h>
+static const struct device *o_dev = DEVICE_DT_GET_ANY(golioth_ostentus);
 #endif
 #ifdef CONFIG_ALUDEL_BATTERY_MONITOR
 #include "battery_monitor/battery.h"
@@ -33,8 +36,9 @@ LOG_MODULE_REGISTER(golioth_can_asset_tracker, LOG_LEVEL_DBG);
 #include <modem/modem_info.h>
 #endif
 
-/* Current firmware version; update in prj.conf or via build argument */
-static const char *_current_version = CONFIG_MCUBOOT_IMGTOOL_SIGN_VERSION;
+/* Current firmware version; update in VERSION */
+static const char *_current_version =
+    STRINGIFY(APP_VERSION_MAJOR) "." STRINGIFY(APP_VERSION_MINOR) "." STRINGIFY(APP_PATCHLEVEL);
 
 static struct golioth_client *client;
 K_SEM_DEFINE(connected, 0, 1);
@@ -106,7 +110,7 @@ static void lte_handler(const struct lte_lc_evt *const evt)
 		    (evt->nw_reg_status == LTE_LC_NW_REG_REGISTERED_ROAMING)) {
 
 			/* Change the state of the Internet LED on Ostentus */
-			IF_ENABLED(CONFIG_LIB_OSTENTUS, (led_internet_set(1);));
+			IF_ENABLED(CONFIG_LIB_OSTENTUS, (ostentus_led_internet_set(o_dev, 1);));
 
 			if (!client) {
 				/* Create and start a Golioth Client */
@@ -154,7 +158,7 @@ void golioth_connection_led_set(uint8_t state)
 	gpio_pin_set_dt(&golioth_led, pin_state);
 #endif /* DT_NODE_EXISTS(DT_ALIAS(golioth_led)) */
 	/* Change the state of the Golioth LED on Ostentus */
-	IF_ENABLED(CONFIG_LIB_OSTENTUS, (led_golioth_set(pin_state);));
+	IF_ENABLED(CONFIG_LIB_OSTENTUS, (ostentus_led_golioth_set(o_dev, pin_state);));
 }
 
 int main(void)
@@ -166,16 +170,26 @@ int main(void)
 
 	LOG_DBG("Started CAN Asset Tracker app");
 
-	LOG_INF("Firmware version: %s", CONFIG_MCUBOOT_IMGTOOL_SIGN_VERSION);
+	LOG_INF("Firmware version: %s", _current_version);
 	IF_ENABLED(CONFIG_MODEM_INFO, (log_modem_firmware_version();));
 
 	IF_ENABLED(CONFIG_LIB_OSTENTUS, (
-		/* Clear Ostentus memory */
-		clear_memory();
+		/* Reset Ostentus and pause for reboot */
+		ostentus_reset(o_dev);
+		k_msleep(300);
+
+		/* Read firmware version from faceplate */
+		char *o_version = (char *)calloc(32, sizeof(char));
+
+		ostentus_version_get(o_dev, o_version, 32);
+		LOG_INF("Ostentus reports firmware version: %s", o_version);
+		free(o_version);
+
 		/* Update Ostentus LEDS using bitmask (Power On and Battery) */
-		led_bitmask(LED_POW | LED_BAT);
+		ostentus_led_bitmask(o_dev, LED_POW | LED_BAT);
+
 		/* Show Golioth Logo on Ostentus ePaper screen */
-		show_splash();
+		ostentus_show_splash(o_dev);
 	));
 
 	/* Get system thread id so loop delay change event can wake main */
@@ -195,7 +209,7 @@ int main(void)
 	 */
 
 	LOG_INF("Connecting to LTE, this may take some time...");
-	lte_lc_init_and_connect_async(lte_handler);
+	lte_lc_connect_async(lte_handler);
 
 #else
 	/* If nRF9160 is not used, start the Golioth Client and block until connected */
@@ -236,24 +250,30 @@ int main(void)
 		 *  - use the enum in app_sensors.h to add new keys
 		 *  - values are updated using these keys (see app_sensors.c)
 		 */
-		slide_add(LATITUDE, LABEL_LATITUDE, strlen(LABEL_LATITUDE));
-		slide_add(LONGITUDE, LABEL_LONGITUDE, strlen(LABEL_LONGITUDE));
-		slide_add(VEHICLE_SPEED, LABEL_VEHICLE_SPEED, strlen(LABEL_VEHICLE_SPEED));
+		ostentus_slide_add(o_dev, LATITUDE, LABEL_LATITUDE, strlen(LABEL_LATITUDE));
+		ostentus_slide_add(o_dev, LONGITUDE, LABEL_LONGITUDE, strlen(LABEL_LONGITUDE));
+		ostentus_slide_add(o_dev, VEHICLE_SPEED, LABEL_VEHICLE_SPEED, strlen(LABEL_VEHICLE_SPEED));
 		IF_ENABLED(CONFIG_ALUDEL_BATTERY_MONITOR, (
-			slide_add(BATTERY_V, LABEL_BATTERY, strlen(LABEL_BATTERY));
-			slide_add(BATTERY_LVL, LABEL_BATTERY, strlen(LABEL_BATTERY));
+			ostentus_slide_add(o_dev,
+					   BATTERY_V,
+					   LABEL_BATTERY,
+					   strlen(LABEL_BATTERY));
+			ostentus_slide_add(o_dev,
+					   BATTERY_LVL,
+					   LABEL_BATTERY,
+					   strlen(LABEL_BATTERY));
 		));
-		slide_add(FIRMWARE, LABEL_FIRMWARE, strlen(LABEL_FIRMWARE));
+		ostentus_slide_add(o_dev, FIRMWARE, LABEL_FIRMWARE, strlen(LABEL_FIRMWARE));
 
 		/* Set the title of the Ostentus summary slide (optional) */
-		summary_title(SUMMARY_TITLE, strlen(SUMMARY_TITLE));
+		ostentus_summary_title(o_dev, SUMMARY_TITLE, strlen(SUMMARY_TITLE));
 
 		/* Update the Firmware slide with the firmware version */
-		slide_set(FIRMWARE, CONFIG_MCUBOOT_IMGTOOL_SIGN_VERSION,
-			  strlen(CONFIG_MCUBOOT_IMGTOOL_SIGN_VERSION));
+		ostentus_slide_set(o_dev, FIRMWARE, (char *)_current_version,
+			  strlen(_current_version));
 
 		/* Start Ostentus slideshow with 30 second delay between slides */
-		slideshow(30000);
+		ostentus_slideshow(o_dev, 30000);
 	));
 
 	while (true) {
