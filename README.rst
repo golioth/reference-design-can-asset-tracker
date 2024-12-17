@@ -276,6 +276,65 @@ The following RPCs can be initiated in the Remote Procedure Call menu of the
    * ``3``: ``LOG_LEVEL_INF``
    * ``4``: ``LOG_LEVEL_DBG``
 
+Hardware Variations
+*******************
+
+This reference design may be built for a variety of different boards.
+
+Prior to building, update ``VERSION`` file to reflect the firmware version number you want to assign
+to this build. Then run the following commands to build and program the firmware onto the device.
+
+Noric nRF9160 DK
+================
+
+This reference design may be built for the Nordic nRF9160 Cellular IoT Development Kit.
+
+.. code-block:: text
+
+   $ (.venv) west build -p -b nrf9160dk/nrf9160/ns --sysbuild app
+   $ (.venv) west flash
+
+Golioth Aludel Mini
+===================
+
+This reference design may be built for the Golioth Aludel Mini board.
+
+.. code-block:: text
+
+   $ (.venv) west build -p -b aludel_mini/nrf9160/ns --sysbuild app
+   $ (.venv) west flash
+
+Golioth Aludel Elixir
+=====================
+
+This reference design may be built for the Golioth Aludel Elixir board. By default this will build
+for the latest hardware revision of this board.
+
+.. code-block:: text
+
+   $ (.venv) west build -p -b aludel_elixir/nrf9160/ns --sysbuild app
+   $ (.venv) west flash
+
+To build for a specific board revision (e.g. Rev A) add the revision suffix ``@<rev>``.
+
+.. code-block:: text
+
+   $ (.venv) west build -p -b aludel_elixir@A/nrf9160/ns --sysbuild app
+   $ (.venv) west flash
+
+OTA Firmware Update
+*******************
+
+This application includes the ability to perform Over-the-Air (OTA) firmware updates:
+
+1. Update the version number in the `VERSION` file and perform a pristine (important) build to
+   incorporate the version change.
+2. Upload the `build/app/zephyr/zephyr.signed.bin` file as an artifact for your Golioth project
+   using `main` as the package name.
+3. Create and roll out a release based on this artifact.
+
+Visit `the Golioth Docs OTA Firmware Upgrade page`_ for more info.
+
 External Libraries
 ******************
 
@@ -289,38 +348,6 @@ from ``west.yml`` and remove the includes/function calls from the C code.
   faceplate
 * `zephyr-network-info`_ is a helper library for querying, formatting, and
   returning network connection information via Zephyr log or Golioth RPC
-
-Pulling in updates from the Reference Design Template
-*****************************************************
-
-This reference design was forked from the `Reference Design Template`_ repo. We
-recommend the following workflow to pull in future changes:
-
-* Setup
-
-  * Create a ``template`` remote based on the Reference Design Template
-    repository
-
-* Merge in template changes
-
-  * Fetch template changes and tags
-  * Merge template release tag into your ``main`` (or other branch)
-  * Resolve merge conflicts (if any) and commit to your repository
-
-.. code-block:: shell
-
-   # Setup
-   git remote add template https://github.com/golioth/reference-design-template.git
-   git fetch template --tags
-
-   # Merge in template changes
-   git fetch template --tags
-   git checkout your_local_branch
-   git merge template_v1.0.0
-
-   # Resolve merge conflicts if necessary
-   git add resolved_files
-   git commit
 
 .. _Golioth Console: https://console.golioth.io
 .. _Nordic nRF9160 DK: https://www.nordicsemi.com/Products/Development-hardware/nrf9160-dk
