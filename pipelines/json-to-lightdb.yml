@@ -4,6 +4,10 @@ filter:
 steps:
   - name: step-0
     transformer:
+      type: extract-timestamp
+      version: v1
+  - name: step-1
+    transformer:
       type: inject-path
       version: v1
     destination:
