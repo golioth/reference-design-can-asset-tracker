@@ -26,7 +26,6 @@ images](https://github.com/golioth/reference-design-can-asset-tracker/releases).
 
 - Nordic nRF9160-DK
 - Golioth Aludel Elixir
-- Golioth Aludel Mini
 
 ### Additional Sensors/Components
 
